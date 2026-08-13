@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.fr.komoapp.komo"],
+        "components": [{ "/": "/e/*", "comment": "Lien d'invitation vers un Komo" }]
+      }
+    ]
+  }
+}
