@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "fr.komoapp.komo",
+      "package_name": "fr.komogo.app",
       "sha256_cert_fingerprints": [
         "A0:0B:4F:E3:08:0E:FF:B3:37:50:3E:D5:EE:69:9A:78:CE:AD:0E:DF:67:30:88:A6:DF:6E:D4:15:2D:9F:91:0A"
       ]

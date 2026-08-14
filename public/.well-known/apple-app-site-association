@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.fr.komoapp.komo"],
+        "appIDs": ["89U6RQ5D8A.fr.komogo.app"],
         "components": [{ "/": "/e/*", "comment": "Lien d'invitation vers un Komo" }]
       }
     ]
