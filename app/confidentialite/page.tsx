@@ -116,7 +116,11 @@ export default function PrivacyPolicy() {
         </p>
         <p>
           La suppression est directement accessible dans l&apos;application : ouvrez votre profil,
-          puis « Supprimer mon compte ». Pour toute autre demande, écrivez-nous à{' '}
+          puis « Supprimer mon compte » — la marche à suivre est détaillée sur la page{' '}
+          <Link href="/suppression-compte" className="font-bold text-terracotta">
+            supprimer son compte
+          </Link>
+          . Pour toute autre demande, écrivez-nous à{' '}
           <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold text-terracotta">
             {CONTACT_EMAIL}
           </a>
