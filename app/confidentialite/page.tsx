@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 }
 
 const LAST_UPDATED = '15 août 2026'
-const CONTACT_EMAIL = 'contact@komogo.fr'
+const CONTACT_EMAIL = 'ludovic@komogo.fr'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -30,7 +30,7 @@ export default function PrivacyPolicy() {
 
       <Section title="Responsable du traitement">
         <p>
-          Komogo est édité par [NOM DU RESPONSABLE], [ADRESSE], joignable à l&apos;adresse{' '}
+          Komogo est édité par Ludovic Sepahi, joignable à l&apos;adresse{' '}
           <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold text-terracotta">
             {CONTACT_EMAIL}
           </a>
