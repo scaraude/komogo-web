@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "fr.komogo.app",
       "sha256_cert_fingerprints": [
-        "1B:B7:5F:E3:1F:66:50:F0:32:5F:60:99:16:91:7C:8C:FB:60:55:EF:07:47:59:F8:D0:6D:E4:50:9F:0A:B7:0E"
+        "1B:B7:5F:E3:1F:66:50:F0:32:5F:60:99:16:91:7C:8C:FB:60:55:EF:07:47:59:F8:D0:6D:E4:50:9F:0A:B7:0E",
+        "D4:1F:5B:93:16:58:12:1D:13:72:DF:36:0A:73:F5:38:3E:A4:D0:AB:A4:2B:8D:64:B1:16:53:3B:A9:7F:32:10"
       ]
     }
   }
