@@ -12,6 +12,19 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '5mb',
     },
   },
+  async redirects() {
+    return [
+      {
+        // L'apex redirige vers www, sauf /.well-known : Google refuse de
+        // suivre une redirection pour assetlinks.json, donc les App Links
+        // sur komogo.fr sans www ne seraient jamais vérifiés.
+        source: '/:path((?!\\.well-known\\/).*)',
+        has: [{ type: 'host', value: 'komogo.fr' }],
+        destination: 'https://www.komogo.fr/:path',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
