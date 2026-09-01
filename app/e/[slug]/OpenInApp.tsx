@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { track } from '@vercel/analytics'
-import { eventDeepLink } from '@/lib/store'
+import { eventAndroidIntentLink, eventDeepLink } from '@/lib/store'
 import { PlayStoreButton, IosSoonBadge } from '@/app/DownloadSection'
 import { usePlatform } from '@/app/usePlatform'
 
 export function OpenInApp({ slug, inviteUrl }: { slug: string; inviteUrl: string }) {
-  const deepLink = eventDeepLink(slug)
   const platform = usePlatform()
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (platform !== 'desktop') {
+    if (platform === 'android') {
       window.location.replace(eventDeepLink(slug))
     }
   }, [platform, slug])
@@ -27,9 +26,9 @@ export function OpenInApp({ slug, inviteUrl }: { slug: string; inviteUrl: string
 
   return (
     <div className="mt-10 flex w-full flex-col items-center gap-4">
-      {platform !== 'desktop' && (
+      {platform === 'android' && (
         <a
-          href={deepLink}
+          href={eventAndroidIntentLink(slug)}
           onClick={() => track('open_in_app_click', { platform })}
           className="w-full max-w-[300px] rounded-[15px] bg-terracotta px-6 py-[14px] text-[16px] font-bold text-on-dark shadow-[0_4px_0_var(--color-terracotta-dk)] transition-all active:translate-y-1 active:shadow-none"
         >

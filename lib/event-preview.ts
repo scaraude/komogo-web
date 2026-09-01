@@ -18,7 +18,9 @@ export type EventPreview = {
 export const getEventPreview = cache(async (slug: string): Promise<EventPreview | null> => {
   const supabase = createAnonClient()
   const { data, error } = await supabase.rpc('get_event_preview', { p_slug: slug })
-  if (error) return null
+  if (error) {
+    throw new Error(`get_event_preview a échoué pour « ${slug} » : ${error.message}`)
+  }
   const rows = (data ?? []) as EventPreview[]
   return rows[0] ?? null
 })

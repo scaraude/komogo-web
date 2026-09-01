@@ -6,6 +6,10 @@ export function eventDeepLink(slug: string) {
   return `${APP_SCHEME}://e/${slug}`
 }
 
+export function eventAndroidIntentLink(slug: string) {
+  return `intent://e/${slug}#Intent;scheme=${APP_SCHEME};package=fr.komogo.app;S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`
+}
+
 export function authConfirmDeepLink(search: string) {
   return `${APP_SCHEME}:///auth/confirm${search ? `?${search}` : ''}`
 }
