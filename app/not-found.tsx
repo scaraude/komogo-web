@@ -6,13 +6,13 @@ export default function NotFound() {
       <div className="mb-4 text-[44px]">🗺️</div>
       <h1 className="mb-2 font-serif text-[26px] text-ink">Komo introuvable</h1>
       <p className="mb-6 text-[14px] leading-[1.5] text-muted">
-        Ce lien n&apos;existe pas ou plus. Vérifie l&apos;adresse, ou lance ton propre plan.
+        Ce lien n&apos;existe pas ou plus. Vérifie l&apos;adresse, ou lance ton propre plan dans l&apos;app.
       </p>
       <Link
         href="/"
         className="rounded-[15px] bg-terracotta px-6 py-[14px] text-[15px] font-bold text-white shadow-[0_4px_0_var(--color-terracotta-dk)] transition-all active:translate-y-1 active:shadow-none"
       >
-        Créer un Komo →
+        Découvrir Komogo →
       </Link>
     </main>
   )

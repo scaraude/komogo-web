@@ -1,24 +1,14 @@
 import { ImageResponse } from '@vercel/og'
-import { createClient } from '@/lib/supabase/server'
+import { getEventPreview } from '@/lib/event-preview'
 import { formatEventDates } from '@/lib/format'
 
 export const runtime = 'edge'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const supabase = await createClient()
-
-  const { data: event } = await supabase
-    .from('events').select('id, title, destination, date_start, date_end').eq('slug', slug).single()
+  const event = await getEventPreview(slug)
 
   if (!event) return new Response(null, { status: 404 })
-
-  const { data: participants } = await supabase
-    .from('participants').select('presence_status').eq('event_id', event.id)
-
-  const hot = (participants ?? []).filter((p) => p.presence_status === 'hot').length
-  const maybe = (participants ?? []).filter((p) => ['maybe', 'unsure'].includes(p.presence_status ?? '')).length
-  const total = (participants ?? []).length
 
   const dateLabel = formatEventDates(event.date_start, event.date_end, { fallback: 'Date à définir' })
 
@@ -36,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
           <div style={{ width: '24px', height: '3px', borderRadius: '2px', background: '#df402a' }} />
           <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '4px', textTransform: 'uppercase', color: '#df402a', fontFamily: 'sans-serif' }}>
-            Komo · Crew. Plan. Go.
+            Komogo · Crew. Plan. Go.
           </span>
         </div>
 
@@ -49,18 +39,36 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
             <span style={{ background: '#fffdf8', border: '1.5px solid #e2d8c6', borderRadius: '999px', padding: '8px 16px', fontSize: '18px', color: '#221f1a', fontFamily: 'sans-serif' }}>
               📅 {dateLabel}
             </span>
-            <span style={{ background: '#fffdf8', border: '1.5px solid #e2d8c6', borderRadius: '999px', padding: '8px 16px', fontSize: '18px', color: '#221f1a', fontFamily: 'sans-serif' }}>
-              📍 {event.destination ?? ''}
-            </span>
+            {event.destination && (
+              <span style={{ background: '#fffdf8', border: '1.5px solid #e2d8c6', borderRadius: '999px', padding: '8px 16px', fontSize: '18px', color: '#221f1a', fontFamily: 'sans-serif' }}>
+                📍 {event.destination}
+              </span>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', fontFamily: 'sans-serif' }}>
-          {total > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontFamily: 'sans-serif' }}>
+          {event.participant_count > 0 && (
             <>
-              <span style={{ fontSize: '16px', color: '#5f7a3e', fontWeight: 600 }}>🔥 {hot} chauds</span>
-              {maybe > 0 && <span style={{ fontSize: '16px', color: '#c8722e', fontWeight: 600 }}>🤔 {maybe} hésitants</span>}
-              <span style={{ fontSize: '16px', color: '#5c574e' }}>{total} participants</span>
+              <div style={{ display: 'flex' }}>
+                {event.initials.map((initial, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      width: '44px', height: '44px', borderRadius: '999px',
+                      background: '#fce7e1', border: '3px solid #fbf4e9',
+                      marginLeft: index === 0 ? '0' : '-10px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '18px', fontWeight: 700, color: '#df402a',
+                    }}
+                  >
+                    {initial}
+                  </div>
+                ))}
+              </div>
+              <span style={{ fontSize: '18px', color: '#5c574e', fontWeight: 600 }}>
+                {event.participant_count === 1 ? 'déjà 1 partant' : `déjà ${event.participant_count} partants`}
+              </span>
             </>
           )}
         </div>

@@ -1,466 +1,73 @@
-import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { getUserId } from '@/lib/auth'
-import { getEventBySlug } from '@/lib/events'
-import { PresenceToggle } from '@/components/presence/PresenceToggle'
-import { PartialPresence } from '@/components/presence/PartialPresence'
-import { LiveCounter } from '@/components/presence/LiveCounter'
-import { PresenceCycle } from '@/components/presence/PresenceCycle'
-import { TransportPanel } from '@/components/transport/TransportPanel'
-import { DatePoll } from '@/components/dates/DatePoll'
-import { Avatar } from '@/components/ui/Avatar'
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
+import { getEventPreview } from '@/lib/event-preview'
 import { formatEventDates } from '@/lib/format'
-import { AccommodationSection } from '@/components/accommodation/AccommodationSection'
-import { MealsPanel } from '@/components/meals/MealsPanel'
-import { ActivityPanel } from '@/components/activities/ActivityPanel'
-import { TimelinePanel } from '@/components/timeline/TimelinePanel'
-import { RecapButton } from '@/components/event/RecapButton'
-import { ExpensesTile } from '@/components/event/ExpensesTile'
-import { EventPitch } from '@/components/event/EventPitch'
-import { ShareSheet } from './ShareSheet'
-import { ParticipantsBadge } from './ParticipantsBadge'
-import { FeedbackButton } from '@/components/feedback/FeedbackButton'
-import { AppHeader } from '@/components/layout/AppHeader'
-import { PlaceLink } from '@/components/ui/PlaceLink'
-import { CompassIcon, UsersIcon, CarIcon, BasketIcon, TicketIcon } from '@/components/ui/icons'
-import type { Participant } from '@/lib/types'
-import type { ReactNode } from 'react'
+import { clientEnv } from '@/lib/env/client'
+import { OpenInApp } from './OpenInApp'
 
-const EVENT_TYPE_WORDING = {
-  weekend:  { eyebrow: 'Komo · week-end',  presenceQ: 'Tu viens ?' },
-  soiree:   { eyebrow: 'Komo · soirée',    presenceQ: 'Tu viens ?' },
-  concert:  { eyebrow: 'Komo · concert',   presenceQ: 'Tu y vas ?' },
-  road_trip:{ eyebrow: 'Komo · road trip', presenceQ: 'T\'embarques ?' },
-  sport:    { eyebrow: 'Komo · sport',     presenceQ: 'Tu joues ?' },
-  autre:    { eyebrow: 'Komo · ton event', presenceQ: 'Tu es là ?' },
-} as const
-
-// Onglets du hub — donc réservés aux events dont les dates sont fixées : tant
-// que l'event est un sondage, la page rend la landing et ignore `tab` (un lien
-// profond vers ?tab=transport retombe dessus au lieu d'ouvrir un module qui
-// n'a pas encore de sens).
-const MODULE_TABS = new Set(['presence', 'transport', 'bouffe', 'activites', 'fil'])
-
-export default async function EventPage({
+export default async function EventInterstitialPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ tab?: string }>
 }) {
   const { slug } = await params
-  const { tab } = await searchParams
-
-  const supabase = await createClient()
-
-  const [event, userId] = await Promise.all([getEventBySlug(slug), getUserId()])
+  const event = await getEventPreview(slug)
   if (!event) notFound()
-  if (!userId) redirect(`/e/${slug}/join`)
 
-  const isPoll = !event.date_start
-  const isMultiDay = !isPoll && event.date_start !== event.date_end
+  const dateLabel = formatEventDates(event.date_start, event.date_end)
+  const inviteUrl = `${clientEnv.siteUrl}/e/${slug}`
 
-  const activeTab = tab && MODULE_TABS.has(tab) ? tab : null
-  const showHub = activeTab === null
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-6 pb-10 pt-8">
+      <header className="flex items-center justify-center gap-2">
+        <Image src="/komo-mark.png" alt="" width={1280} height={486} className="h-auto w-[40px]" />
+        <span className="text-[18px] font-bold tracking-[0.5px] text-ink" style={{ fontFamily: 'var(--font-fredoka)' }}>
+          Komogo
+        </span>
+      </header>
 
-  // Chaque écran ne lit que ses propres tables : sans ce filtrage, ouvrir un
-  // seul onglet chargeait les 11 tables de l'event (et payait la RLS sur
-  // chaque ligne) pour n'en afficher qu'une poignée.
-  const needsMeals = !isPoll && (showHub || activeTab === 'bouffe' || activeTab === 'fil')
-  const needsProducts = !isPoll && (showHub || activeTab === 'bouffe' || activeTab === 'fil')
-  const needsMealOwners = !isPoll && (activeTab === 'bouffe' || activeTab === 'fil')
-  const needsActivities = !isPoll && (showHub || activeTab === 'activites' || activeTab === 'fil')
-  const needsSignups = !isPoll && (activeTab === 'activites' || activeTab === 'fil')
-  const needsTransport =
-    !isPoll && (showHub || activeTab === 'presence' || activeTab === 'transport' || activeTab === 'fil')
-  const needsAccommodation = isMultiDay && activeTab === 'presence'
+      <section className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+        <p className="text-[14px] font-bold uppercase tracking-[2px] text-terracotta">
+          Ton crew t&apos;invite
+        </p>
 
-  const [
-    { data: participant },
-    { data: allParticipants },
-    { data: dateProposals },
-    { data: accommodationOptions },
-    { data: meals },
-    { data: products },
-    { data: mealOwners },
-    { data: activities },
-    { data: activitySignups },
-    { legs, occupants },
-  ] = await Promise.all([
-    supabase.from('participants').select('*').eq('event_id', event.id).eq('user_id', userId).maybeSingle(),
-    supabase.from('participants').select('*').eq('event_id', event.id).order('joined_at', { ascending: true }),
-    isPoll
-      ? supabase.from('date_proposals').select('*').eq('event_id', event.id).order('start_date')
-      : Promise.resolve({ data: [] }),
-    needsAccommodation
-      ? supabase.from('accommodation_options').select('*').eq('event_id', event.id).order('created_at')
-      : Promise.resolve({ data: [] }),
-    needsMeals
-      ? supabase.from('meals').select('*').eq('event_id', event.id).order('created_at')
-      : Promise.resolve({ data: [] }),
-    needsProducts
-      ? supabase.from('products').select('*').eq('event_id', event.id).order('created_at')
-      : Promise.resolve({ data: [] }),
-    needsMealOwners
-      ? supabase.from('meal_owners').select('*').eq('event_id', event.id)
-      : Promise.resolve({ data: [] }),
-    needsActivities
-      ? supabase.from('activities').select('*').eq('event_id', event.id).order('created_at')
-      : Promise.resolve({ data: [] }),
-    needsSignups
-      ? supabase.from('activity_signups').select('*').eq('event_id', event.id)
-      : Promise.resolve({ data: [] }),
-    (async () => {
-      if (!needsTransport) return { legs: [], occupants: [] }
-      const { data: legs } = await supabase.from('transport_legs').select('*').eq('event_id', event.id)
-      if (!legs?.length) return { legs: legs ?? [], occupants: [] }
-      const { data: occupants } = await supabase
-        .from('transport_occupants').select('*')
-        .in('leg_id', legs.map((leg) => leg.id))
-      return { legs, occupants }
-    })(),
-  ])
-  if (!participant) redirect(`/e/${slug}/join`)
-  const participants = allParticipants ?? []
+        <h1 className="mt-3 text-[32px] font-bold leading-[1.15] text-ink" style={{ fontFamily: 'var(--font-fredoka)' }}>
+          {event.title}
+        </h1>
 
-  const isAdmin = participant.role === 'créateur' || participant.role === 'co_organisateur'
-  // Créateur de l'event : sert à la sheet membres (bloque « Quitter le Komo »).
-  const isCreator = event.created_by === userId
-  const wording = EVENT_TYPE_WORDING[event.event_type as keyof typeof EVENT_TYPE_WORDING] ?? EVENT_TYPE_WORDING.autre
-
-  // ====================== LANDING « SONDAGE » ======================
-  // Pas encore de dates : l'event n'a pas de hub, il a une landing. Un invité
-  // qui ouvre le lien de partage doit d'abord comprendre le plan et avoir envie
-  // d'en être — le reste (transport, bouffe, activités) n'a aucun sens tant
-  // qu'on ne sait pas quand ça se passe, donc rien d'autre n'est accessible.
-  if (isPoll) {
-    return (
-      <main className="animate-screen-in mx-auto min-h-dvh w-full max-w-[440px] px-[18px] pb-8 pt-2">
-        <AppHeader />
-
-        {/* « Le plan » — reprend la card héro noire du hub pour la continuité. */}
-        <div className="mb-[18px] rounded-[24px] bg-ink p-[22px] text-on-dark">
-          <p className="text-[11px] font-bold uppercase tracking-[1.1px] text-terracotta">
-            {wording.eyebrow}
-          </p>
-          <h1 className="mt-[6px] font-serif text-[27px] leading-[1.1] text-on-dark">{event.title}</h1>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <span className="rounded-full border-[1.5px] border-line bg-card px-4 py-2 text-[14px] text-ink">
+            📅 {dateLabel}
+          </span>
           {event.destination && (
-            <div className="mt-[5px] text-[13px] text-on-dark-2">
-              <PlaceLink query={event.destination} className="underline decoration-dotted underline-offset-2 decoration-on-dark-2 hover:decoration-on-dark">
-                {event.destination}
-              </PlaceLink>
-            </div>
+            <span className="rounded-full border-[1.5px] border-line bg-card px-4 py-2 text-[14px] text-ink">
+              📍 {event.destination}
+            </span>
           )}
-
-          <EventPitch slug={slug} initialPitch={event.pitch} canEdit={isAdmin} />
-
-          <ParticipantsBadge
-            slug={slug}
-            eventId={event.id}
-            currentParticipantId={participant.id}
-            isCreator={isCreator}
-            participants={participants.map((p) => ({ id: p.id, pseudo: p.pseudo, hasAccount: p.user_id != null, avatar_url: p.avatar_url }))}
-          />
         </div>
 
-        <DatePoll
-          slug={slug}
-          eventId={event.id}
-          participantId={participant.id}
-          initialProposals={dateProposals ?? []}
-          participants={participants.map((p) => ({ id: p.id, pseudo: p.pseudo, avatar_url: p.avatar_url }))}
-          isCreator={isAdmin}
-        />
-
-        <div className="mt-6">
-          <ShareSheet slug={slug} title={event.title} />
-        </div>
-
-        <FeedbackButton eventId={event.id} />
-      </main>
-    )
-  }
-
-  // ---- Counts pour les tuiles du hub ----
-  const hotCount = participants.filter((p) => p.presence_status === 'hot').length
-  const maybeCount = participants.filter(
-    (p) => p.presence_status === 'maybe' || p.presence_status === 'unsure',
-  ).length
-  const freeSeats = (legs ?? [])
-    .filter((l) => l.total_seats != null)
-    .reduce((acc, l) => {
-      const taken = (occupants ?? []).filter((o) => o.leg_id === l.id).length
-      return acc + Math.max(0, (l.total_seats ?? 0) - taken)
-    }, 0)
-  const groceryCount = (products ?? []).length
-  const activityCount = (activities ?? []).length
-  const timelineCount = (legs ?? []).length + (meals ?? []).length + activityCount
-
-  // ====================== HUB ======================
-  if (showHub) {
-    return (
-      <main className="animate-screen-in mx-auto min-h-dvh w-full max-w-[440px] px-[18px] pb-8 pt-2">
-        <AppHeader />
-
-        {/* Hero */}
-        <div className="mb-[14px] rounded-[24px] bg-ink p-[22px] text-on-dark">
-          <h1 className="font-serif text-[27px] leading-[1.1] text-on-dark">{event.title}</h1>
-          <div className="mt-[7px] text-[13px] text-on-dark-2">
-            <div>{formatEventDates(event.date_start, event.date_end)}</div>
-            {event.destination && (
-              <div className="mt-[2px]">
-                <PlaceLink query={event.destination} className="underline decoration-dotted underline-offset-2 decoration-on-dark-2 hover:decoration-on-dark">
-                  {event.destination}
-                </PlaceLink>
-              </div>
-            )}
-          </div>
-          <ParticipantsBadge
-            slug={slug}
-            eventId={event.id}
-            currentParticipantId={participant.id}
-            isCreator={isCreator}
-            participants={participants.map((p) => ({ id: p.id, pseudo: p.pseudo, hasAccount: p.user_id != null, avatar_url: p.avatar_url }))}
-          />
-        </div>
-
-        {/* Le fil du séjour — vue chronologique transverse */}
-        <Link
-          href="?tab=fil"
-          className="mb-[12px] flex items-center justify-between rounded-[19px] border-[1.5px] border-line-2 bg-card p-[17px] shadow-card"
-        >
-          <div className="flex items-center gap-[13px]">
-            <CompassIcon className="h-[23px] w-[23px] shrink-0 text-terracotta" />
-            <div>
-              <div className="text-[15px] font-bold text-ink">Le fil du séjour</div>
-              <div className="text-[12.5px] text-muted">
-                {timelineCount > 0
-                  ? `${timelineCount} moment${timelineCount > 1 ? 's' : ''}, du départ au retour`
-                  : 'transports, repas & activités, dans l’ordre'}
-              </div>
-            </div>
-          </div>
-          <span className="text-[13px] font-bold text-terracotta">ouvrir ›</span>
-        </Link>
-
-        {/* Grille modules 2×2 */}
-        <div className="mb-[18px] grid grid-cols-2 gap-[12px]">
-          <ModuleTile href="?tab=presence" icon={<UsersIcon className="h-[23px] w-[23px]" />} title="Présence"
-            subtitle={`${hotCount} chaud${hotCount > 1 ? 's' : ''} · ${maybeCount} hésite${maybeCount > 1 ? 'nt' : ''}`} />
-          <ModuleTile href="?tab=transport" icon={<CarIcon className="h-[23px] w-[23px]" />} title="Transport"
-            subtitle={freeSeats > 0 ? `${freeSeats} place${freeSeats > 1 ? 's' : ''} libre${freeSeats > 1 ? 's' : ''}` : 'à organiser'} />
-          <ModuleTile href="?tab=bouffe" icon={<BasketIcon className="h-[23px] w-[23px]" />} title="Bouffe"
-            subtitle={groceryCount > 0 ? `${groceryCount} produit${groceryCount > 1 ? 's' : ''}` : 'rien encore'} />
-          <ModuleTile href="?tab=activites" icon={<TicketIcon className="h-[23px] w-[23px]" />} title="Activités"
-            subtitle={activityCount > 0 ? `${activityCount} activité${activityCount > 1 ? 's' : ''}` : 'rien encore'} />
-          <ExpensesTile slug={slug} initialUrl={event.tricount_url} canEdit />
-        </div>
-
-        {/* Partage */}
-        <ShareSheet slug={slug} title={event.title} />
-
-        <FeedbackButton eventId={event.id} />
-      </main>
-    )
-  }
-
-  // ====================== ÉCRANS MODULES ======================
-  return (
-    <main className="animate-screen-in mx-auto min-h-dvh w-full max-w-[440px] px-[20px] pb-10 pt-3">
-      <Link
-        href={`/e/${slug}`}
-        className="mb-4 inline-flex items-center gap-1 text-[14px] font-semibold text-muted"
-      >
-        <span aria-hidden>‹</span> Retour
-        <span className="sr-only">à l&apos;accueil de l&apos;event</span>
-      </Link>
-
-      {/* Présence */}
-      {activeTab === 'presence' && (
-        <section>
-          <h1 className="mb-[18px] font-serif text-[30px] text-ink">{wording.presenceQ}</h1>
-
-          <PresenceToggle
-            slug={slug}
-            participantId={participant.id}
-            initialStatus={participant.presence_status}
-          />
-          {isMultiDay && (
-            <PartialPresence
-              slug={slug}
-              participantId={participant.id}
-              initialDays={participant.partial_days as Record<string, boolean> | null}
-              dateStart={event.date_start!}
-              dateEnd={event.date_end!}
-            />
-          )}
-          {isMultiDay && (
-            <AccommodationSection
-              slug={slug}
-              eventId={event.id}
-              participantId={participant.id}
-              initialOptions={accommodationOptions ?? []}
-              totalParticipants={participants.length}
-            />
-          )}
-
-          <LiveCounter eventId={event.id} initialParticipants={participants} />
-
-          <div className="mt-8">
-            <h3 className="mb-3 text-[12px] font-bold uppercase tracking-[0.8px] text-muted-2">
-              Les {participants.length} potes
-            </h3>
-            <div className="flex flex-col gap-2">
-              {participants.map((p: Participant) => (
-                <div key={p.id}
-                  className={`flex items-center justify-between rounded-[16px] border-[1.5px] bg-card px-4 py-3 ${
-                    p.id === participant.id ? 'border-terracotta' : 'border-line-2'
-                  }`}>
-                  <div className="flex items-center gap-2">
-                    <Avatar pseudo={p.pseudo} avatarUrl={p.avatar_url} className="h-8 w-8 bg-ink text-xs text-paper" />
-                    <div>
-                      <span className="text-sm font-semibold">
-                        {p.pseudo}
-                        {p.id === participant.id && (
-                          <span className="ml-1.5 text-xs font-normal text-terracotta">(toi)</span>
-                        )}
-                      </span>
-                      {/* Le rôle co-orga existe en back (RLS) mais reste masqué côté front. */}
-                      {p.role === 'créateur' && (
-                        <span className="ml-2 rounded-full bg-terracotta-soft px-1.5 py-0.5 text-xs font-semibold text-terracotta">
-                          créateur
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <PresenceCycle
-                      slug={slug}
-                      participantId={p.id}
-                      initialStatus={p.presence_status}
-                      pseudo={p.pseudo}
-                    />
-                  </div>
-                </div>
+        {event.participant_count > 0 && (
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <span className="flex -space-x-2">
+              {event.initials.map((initial, index) => (
+                <span
+                  key={index}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper bg-terracotta-soft text-[13px] font-bold text-terracotta"
+                >
+                  {initial}
+                </span>
               ))}
-            </div>
-
-            {isAdmin && (
-              <RecapButton
-                event={{ slug, title: event.title, date_start: event.date_start, date_end: event.date_end, destination: event.destination }}
-                participants={participants}
-                legs={legs ?? []}
-                occupants={occupants ?? []}
-              />
-            )}
+            </span>
+            <span className="text-[14px] text-muted">
+              {event.participant_count === 1
+                ? 'déjà 1 partant·e'
+                : `déjà ${event.participant_count} partant·es`}
+            </span>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Bouffe */}
-      {activeTab === 'bouffe' && (
-        <MealsPanel
-          slug={slug}
-          eventId={event.id}
-          participantId={participant.id}
-          initialMeals={meals ?? []}
-          initialProducts={products ?? []}
-          initialMealOwners={mealOwners ?? []}
-          participants={participants}
-          dateStart={event.date_start}
-          dateEnd={event.date_end}
-        />
-      )}
-
-      {/* Activités */}
-      {activeTab === 'activites' && (
-        <ActivityPanel
-          slug={slug}
-          eventId={event.id}
-          participantId={participant.id}
-          initialActivities={activities ?? []}
-          initialSignups={activitySignups ?? []}
-          participants={participants.map((p) => ({ id: p.id, pseudo: p.pseudo, avatar_url: p.avatar_url }))}
-          isAdmin={isAdmin}
-          dateStart={event.date_start}
-          dateEnd={event.date_end}
-        />
-      )}
-
-      {/* Le fil */}
-      {activeTab === 'fil' && !isPoll && (
-        <TimelinePanel
-          slug={slug}
-          eventId={event.id}
-          participantId={participant.id}
-          dateStart={event.date_start!}
-          dateEnd={event.date_end ?? event.date_start!}
-          destination={event.destination}
-          participants={participants}
-          legs={legs ?? []}
-          occupants={occupants ?? []}
-          meals={meals ?? []}
-          mealOwners={mealOwners ?? []}
-          products={products ?? []}
-          activities={activities ?? []}
-          initialSignups={activitySignups ?? []}
-        />
-      )}
-
-      {/* Transport */}
-      {activeTab === 'transport' && (
-        <TransportPanel
-          slug={slug}
-          eventId={event.id}
-          participantId={participant.id}
-          legs={legs ?? []}
-          occupants={occupants ?? []}
-          participants={participants}
-          initialDirection="aller"
-          isCreator={isAdmin}
-          eventDestination={event.destination}
-          eventDateStart={event.date_start}
-          eventDateEnd={event.date_end}
-        />
-      )}
+        <OpenInApp slug={slug} inviteUrl={inviteUrl} />
+      </section>
     </main>
-  )
-}
-
-function ModuleTile({
-  href, icon, title, subtitle, locked = false,
-}: {
-  href: string; icon: ReactNode; title: string; subtitle: string
-  /** Tant que les dates ne sont pas fixées, la tuile est inerte. */
-  locked?: boolean
-}) {
-  if (locked) {
-    return (
-      <div
-        aria-disabled="true"
-        className="flex h-[94px] flex-col justify-between rounded-[19px] border-[1.5px] border-line-2 bg-card p-[17px]"
-      >
-        <div className="text-disabled">{icon}</div>
-        <div>
-          <div className="text-[15px] font-bold text-disabled">{title}</div>
-          <div className="text-[11px] font-bold leading-[1.25] text-terracotta">
-            nous faut une date d&apos;abord
-          </div>
-        </div>
-      </div>
-    )
-  }
-  return (
-    <Link
-      href={href}
-      className="flex h-[94px] flex-col justify-between rounded-[19px] border-[1.5px] border-line-2 bg-card p-[17px] shadow-card"
-    >
-      <div className="text-terracotta">{icon}</div>
-      <div>
-        <div className="text-[15px] font-bold text-ink">{title}</div>
-        <div className="text-[12.5px] text-muted">{subtitle}</div>
-      </div>
-    </Link>
   )
 }

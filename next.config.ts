@@ -5,13 +5,6 @@ const nextConfig: NextConfig = {
     'macbook-pro-de-ludovic.angora-hadar.ts.net',
     'scaraude-g3.angora-hadar.ts.net',
   ],
-  experimental: {
-    serverActions: {
-      // Défaut Next = 1 Mo, trop bas pour un upload de photo (avatar
-      // recadré/compressé côté client, mais on garde une marge de sécurité).
-      bodySizeLimit: '5mb',
-    },
-  },
   async redirects() {
     return [
       {
@@ -23,6 +16,11 @@ const nextConfig: NextConfig = {
         destination: 'https://www.komogo.fr/:path',
         permanent: true,
       },
+      // Écrans de l'ancienne web app : les favoris et anciens liens
+      // aboutissent sur la passerelle plutôt qu'en 404.
+      { source: '/mes-komos', destination: '/', permanent: true },
+      { source: '/connexion', destination: '/', permanent: true },
+      { source: '/e/:slug/join', destination: '/e/:slug', permanent: true },
     ];
   },
   async headers() {

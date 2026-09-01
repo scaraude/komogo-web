@@ -29,7 +29,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["lib/env/**"],
+    files: ["lib/env/**", "test-e2e.mjs"],
     rules: { "no-restricted-syntax": "off" },
   },
 ]);
