@@ -40,7 +40,7 @@ export default async function LandingPage() {
             src="/screenshot-mobile.png"
             alt="L'app Komogo sur un téléphone : le programme du séjour, qui vient, qui conduit."
             width={1080}
-            height={2340}
+            height={2400}
             priority
             className="relative h-auto w-[220px] rounded-[28px] border-[6px] border-ink/90 shadow-[0_18px_40px_rgba(34,31,26,0.18)]"
           />
