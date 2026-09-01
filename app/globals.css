@@ -75,7 +75,7 @@
 }
 
 body {
-  background: radial-gradient(120% 90% at 50% 0%, #fbf4e9 0%, #ece2d2 100%);
+  background: #ece2d2 radial-gradient(120% 90% at 50% 0%, #fbf4e9 0%, #ece2d2 100%);
   background-attachment: fixed;
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;

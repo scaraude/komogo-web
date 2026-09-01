@@ -1,5 +1,6 @@
-import { localDate } from './calendar'
-import type { Period } from './types'
+function localDate(iso: string): Date {
+  return new Date(`${iso}T12:00:00`)
+}
 
 export function formatEventDates(
   start: string | null,
@@ -16,16 +17,4 @@ export function formatEventDates(
     return `${startDate.getDate()} → ${endDate.getDate()} ${monthName(endDate)}`
   }
   return `${startDate.getDate()} ${monthName(startDate)} → ${endDate.getDate()} ${monthName(endDate)}`
-}
-
-/** Formate une période via la même logique que les dates d'un séjour. */
-export function formatPeriod(
-  period: Period,
-  opts?: { month?: 'short' | 'long' },
-): string {
-  return formatEventDates(period.start, period.end, opts)
-}
-
-export function hhmm(isoDateTime: string | null | undefined): string | undefined {
-  return isoDateTime ? isoDateTime.slice(11, 16) : undefined
 }

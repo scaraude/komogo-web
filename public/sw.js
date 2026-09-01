@@ -1,49 +1,18 @@
-// Service worker Komo — Web Push (pas de cache offline).
-// Reçoit les push envoyés par lib/notifications/dispatch.ts et gère le clic.
-
-// Active le nouveau SW immédiatement (pas d'attente de fermeture des onglets).
+// Service worker d'auto-destruction : la PWA est retirée au profit de l'app
+// native. Il remplace l'ancien SW chez tous les visiteurs, se désinscrit et
+// recharge les onglets pour sortir de l'ancien cache. Le claim() est requis :
+// sans lui les onglets restent contrôlés par l'ancien worker et matchAll ne
+// retourne rien. À conserver tel quel tant que des navigateurs peuvent encore
+// porter l'ancien service worker.
 self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
-// Handler fetch minimal (pass-through). Sa seule présence est requise par
-// Chromium/Brave pour considérer l'app « installable » en standalone (WebAPK)
-// sur Android — sans lui, « Ajouter à l'écran d'accueil » ne crée qu'un
-// raccourci avec barre d'URL. On ne fait aucun cache : on laisse passer.
-self.addEventListener('fetch', () => {})
-
-self.addEventListener('push', (event) => {
-  if (!event.data) return
-  let data = {}
-  try {
-    data = event.data.json()
-  } catch {
-    data = { title: 'Komo', body: event.data.text() }
-  }
-  const title = data.title || 'Komo'
-  const options = {
-    body: data.body || '',
-    icon: data.icon || '/icon-192.png',
-    badge: '/icon-192.png',
-    data: { url: data.url || '/' },
-  }
-  event.waitUntil(self.registration.showNotification(title, options))
-})
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close()
-  const url = event.notification.data?.url || '/'
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Réutilise un onglet Komo déjà ouvert si possible, sinon en ouvre un.
-        for (const client of clientList) {
-          if ('focus' in client) {
-            client.navigate(url)
-            return client.focus()
-          }
-        }
-        return self.clients.openWindow(url)
-      }),
+    (async () => {
+      await self.clients.claim()
+      await self.registration.unregister()
+      const clients = await self.clients.matchAll({ type: 'window' })
+      for (const client of clients) client.navigate(client.url)
+    })()
   )
 })

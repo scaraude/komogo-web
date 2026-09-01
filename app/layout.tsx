@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Fredoka, Manrope } from 'next/font/google'
 import './globals.css'
-import { UndoProvider } from '@/components/ui/undo'
-import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister'
-import { InstallPrompt } from '@/components/pwa/InstallPrompt'
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
@@ -20,8 +17,8 @@ const manrope = Manrope({
 })
 
 export const metadata: Metadata = {
-  title: 'Komo — Crew. Plan. Go.',
-  description: "Un lien dans le groupe. Tout le monde se déclare en 30 secondes. Qui vient, qui a une caisse, qui n'a pas encore de solution.",
+  title: 'Komogo — Crew. Plan. Go.',
+  description: "L'app qui organise tes voyages entre amis. Un lien dans le groupe, tout le monde se déclare en 30 secondes.",
 }
 
 export const viewport: Viewport = {
@@ -36,9 +33,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${fredoka.variable} ${manrope.variable}`}>
       <body className="min-h-screen font-sans">
-        <UndoProvider>{children}</UndoProvider>
-        <ServiceWorkerRegister />
-        <InstallPrompt />
+        {children}
         <Analytics />
         <SpeedInsights />
       </body>
