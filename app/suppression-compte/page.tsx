@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Comment supprimer votre compte Komogo et les données associées.',
 }
 
-const LAST_UPDATED = '15 août 2026'
+const LAST_UPDATED = '18 septembre 2026'
 const CONTACT_EMAIL = 'ludovic@komogo.fr'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -59,7 +59,11 @@ export default function AccountDeletion() {
           <li>votre compte et votre adresse e-mail</li>
           <li>votre pseudo et votre photo de profil</li>
           <li>vos participations à tous les Komos, ainsi que vos disponibilités et vos votes</li>
-          <li>les Komos que vous avez créés et choisi de supprimer, avec tout leur contenu</li>
+          <li>
+            les Komos que vous avez créés et choisi de supprimer, avec tout leur contenu, y compris
+            les photos de leur album
+          </li>
+          <li>l&apos;identifiant de notification enregistré pour chacun de vos appareils</li>
         </ul>
       </Section>
 
@@ -67,7 +71,9 @@ export default function AccountDeletion() {
         <p>
           Les Komos que vous avez choisi de transférer continuent d&apos;exister sous la
           responsabilité de leur nouvel organisateur. Le contenu que vous y aviez ajouté — repas,
-          activités, trajets, hébergements — y reste, sans plus être rattaché à votre compte.
+          activités, trajets, hébergements, et les photos déposées dans l&apos;album — y reste, sans
+          plus être rattaché à votre compte. Si vous ne souhaitez pas y laisser vos photos,
+          supprimez-les depuis l&apos;album avant de supprimer votre compte.
         </p>
         <p>
           Nous ne conservons aucune sauvegarde nominative au-delà de la suppression, hormis ce
@@ -76,6 +82,13 @@ export default function AccountDeletion() {
       </Section>
 
       <Section title="Vos autres droits">
+        <p>
+          Besoin d&apos;un coup de main avant d&apos;en arriver là ? La page{' '}
+          <Link href="/aide" className="font-bold text-terracotta">
+            aide
+          </Link>{' '}
+          répond aux questions les plus fréquentes.
+        </p>
         <p>
           Le détail de ce que nous collectons et de vos droits figure dans notre{' '}
           <Link href="/confidentialite" className="font-bold text-terracotta">
