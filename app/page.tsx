@@ -50,6 +50,9 @@ export default async function LandingPage() {
       </section>
 
       <footer className="flex items-center justify-center gap-4 text-[12px] text-muted">
+        <Link href="/aide" className="underline underline-offset-2">
+          Aide
+        </Link>
         <Link href="/confidentialite" className="underline underline-offset-2">
           Confidentialité
         </Link>
