@@ -53,6 +53,9 @@ export default async function LandingPage() {
         <Link href="/aide" className="underline underline-offset-2">
           Aide
         </Link>
+        <Link href="/conditions" className="underline underline-offset-2">
+          Conditions
+        </Link>
         <Link href="/confidentialite" className="underline underline-offset-2">
           Confidentialité
         </Link>

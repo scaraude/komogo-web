@@ -128,6 +128,21 @@ export default function Help() {
         </p>
       </Question>
 
+      <Question title="Un contenu ou un participant me pose problème">
+        <p>
+          Signalez-le depuis l&apos;application : le drapeau en haut d&apos;une photo, ou « Signaler
+          ce participant » sur la fiche d&apos;un membre. La photo signalée disparaît tout de suite
+          de votre album, et nous examinons chaque signalement sous 24 heures. Vous pouvez aussi
+          masquer quelqu&apos;un vous-même — ses photos et son pseudo vous sont alors cachés dans
+          tous vos Komos — et la personne qui a créé le Komo peut retirer un participant de
+          l&apos;équipe. Les règles et les suites données sont détaillées dans nos{' '}
+          <Link href="/conditions" className="font-bold text-terracotta">
+            conditions d&apos;utilisation
+          </Link>
+          .
+        </p>
+      </Question>
+
       <Question title="Mes données">
         <p>
           Ce que nous collectons, pourquoi, et comment exercer vos droits : tout est détaillé dans
