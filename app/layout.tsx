@@ -3,6 +3,8 @@ import { Fredoka, Manrope } from 'next/font/google'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { messagesFor } from '@/lib/messages'
+import { requestLocale } from '@/lib/request-locale'
 
 const fredoka = Fredoka({
   subsets: ['latin'],
@@ -16,22 +18,26 @@ const manrope = Manrope({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: 'Komogo — Crew. Plan. Go.',
-  description: "L'app qui organise tes voyages entre amis. Un lien dans le groupe, tout le monde se déclare en 30 secondes.",
+export async function generateMetadata(): Promise<Metadata> {
+  const messages = messagesFor(await requestLocale())
+  return {
+    title: 'Komogo — Crew. Plan. Go.',
+    description: messages.siteDescription,
+  }
 }
 
 export const viewport: Viewport = {
   themeColor: '#df402a',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = await requestLocale()
   return (
-    <html lang="fr" className={`${fredoka.variable} ${manrope.variable}`}>
+    <html lang={locale} className={`${fredoka.variable} ${manrope.variable}`}>
       <body className="min-h-screen font-sans">
         {children}
         <Analytics />

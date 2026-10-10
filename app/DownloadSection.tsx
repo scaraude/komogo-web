@@ -2,9 +2,18 @@
 
 import Image from 'next/image'
 import { track } from '@vercel/analytics'
+import type { Messages } from '@/lib/messages'
 import { PLAY_STORE_URL, type Platform } from '@/lib/store'
 
-export function PlayStoreButton({ platform, context }: { platform: Platform; context: string }) {
+export function PlayStoreButton({
+  platform,
+  context,
+  messages,
+}: {
+  platform: Platform
+  context: string
+  messages: Messages
+}) {
   return (
     <a
       href={PLAY_STORE_URL}
@@ -18,31 +27,31 @@ export function PlayStoreButton({ platform, context }: { platform: Platform; con
         <path fill="#00b4ff" d="M3.6 1.8c.5-.4 1.2-.4 1.8-.1l11.7 6.9-3.4 3.4L3.6 1.8Z" />
       </svg>
       <span>
-        <span className="block text-[11px] uppercase tracking-[0.5px] text-on-dark-2">Disponible sur</span>
+        <span className="block text-[11px] uppercase tracking-[0.5px] text-on-dark-2">{messages.availableOn}</span>
         <span className="block text-[17px] font-bold leading-tight">Google Play</span>
       </span>
     </a>
   )
 }
 
-export function IosSoonBadge() {
+export function IosSoonBadge({ messages }: { messages: Messages }) {
   return (
     <p className="rounded-full bg-soft px-4 py-2 text-[13px] font-bold text-faint">
-      🍏 Bientôt sur iPhone
+      {messages.iosSoon}
     </p>
   )
 }
 
-export function DownloadSection({ platform }: { platform: Platform }) {
+export function DownloadSection({ platform, messages }: { platform: Platform; messages: Messages }) {
   return (
     <div className="mt-10 flex flex-col items-center gap-4">
-      {platform === 'android' && <PlayStoreButton platform={platform} context="landing" />}
+      {platform === 'android' && <PlayStoreButton platform={platform} context="landing" messages={messages} />}
 
       {platform === 'ios' && (
         <>
-          <IosSoonBadge />
+          <IosSoonBadge messages={messages} />
           <p className="max-w-[280px] text-[13px] leading-[1.5] text-muted">
-            L&apos;app iPhone arrive. En attendant, Komogo est disponible sur Android.
+            {messages.iosComing}
           </p>
         </>
       )}
@@ -50,11 +59,11 @@ export function DownloadSection({ platform }: { platform: Platform }) {
       {platform === 'desktop' && (
         <>
           <div className="rounded-[18px] border border-line-2 bg-card p-4 shadow-[0_2px_0_var(--color-line-2)]">
-            <Image src="/qr-download.svg" alt="QR code vers komogo.fr" width={148} height={148} className="h-[148px] w-[148px]" />
+            <Image src="/qr-download.svg" alt={messages.qrAlt} width={148} height={148} className="h-[148px] w-[148px]" />
           </div>
-          <p className="text-[13px] font-bold text-faint">Scanne avec ton téléphone pour installer l&apos;app</p>
-          <PlayStoreButton platform={platform} context="landing" />
-          <IosSoonBadge />
+          <p className="text-[13px] font-bold text-faint">{messages.scanToInstall}</p>
+          <PlayStoreButton platform={platform} context="landing" messages={messages} />
+          <IosSoonBadge messages={messages} />
         </>
       )}
     </div>
