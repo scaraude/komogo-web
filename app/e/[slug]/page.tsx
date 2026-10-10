@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { getEventPreview } from '@/lib/event-preview'
 import { formatEventDates } from '@/lib/format'
 import { clientEnv } from '@/lib/env/client'
+import { messagesFor } from '@/lib/messages'
+import { requestLocale } from '@/lib/request-locale'
 import { OpenInApp } from './OpenInApp'
 
 export default async function EventInterstitialPage({
@@ -14,7 +16,12 @@ export default async function EventInterstitialPage({
   const event = await getEventPreview(slug)
   if (!event) notFound()
 
-  const dateLabel = formatEventDates(event.date_start, event.date_end)
+  const locale = await requestLocale()
+  const messages = messagesFor(locale)
+  const dateLabel = formatEventDates(event.date_start, event.date_end, {
+    fallback: messages.datesToBeSet,
+    locale,
+  })
   const inviteUrl = `${clientEnv.siteUrl}/e/${slug}`
 
   return (
@@ -28,7 +35,7 @@ export default async function EventInterstitialPage({
 
       <section className="flex flex-1 flex-col items-center justify-center py-8 text-center">
         <p className="text-[14px] font-bold uppercase tracking-[2px] text-terracotta">
-          Ton crew t&apos;invite
+          {messages.crewInvitesYou}
         </p>
 
         <h1 className="mt-3 text-[32px] font-bold leading-[1.15] text-ink" style={{ fontFamily: 'var(--font-fredoka)' }}>
@@ -59,14 +66,12 @@ export default async function EventInterstitialPage({
               ))}
             </span>
             <span className="text-[14px] text-muted">
-              {event.participant_count === 1
-                ? 'déjà 1 partant·e'
-                : `déjà ${event.participant_count} partant·es`}
+              {messages.alreadyIn(event.participant_count)}
             </span>
           </div>
         )}
 
-        <OpenInApp slug={slug} inviteUrl={inviteUrl} />
+        <OpenInApp slug={slug} inviteUrl={inviteUrl} messages={messages} />
       </section>
     </main>
   )

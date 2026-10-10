@@ -5,8 +5,17 @@ import { track } from '@vercel/analytics'
 import { eventAndroidIntentLink, eventDeepLink } from '@/lib/store'
 import { PlayStoreButton, IosSoonBadge } from '@/app/DownloadSection'
 import { usePlatform } from '@/app/usePlatform'
+import type { Messages } from '@/lib/messages'
 
-export function OpenInApp({ slug, inviteUrl }: { slug: string; inviteUrl: string }) {
+export function OpenInApp({
+  slug,
+  inviteUrl,
+  messages,
+}: {
+  slug: string
+  inviteUrl: string
+  messages: Messages
+}) {
   const platform = usePlatform()
   const [copied, setCopied] = useState(false)
 
@@ -32,15 +41,19 @@ export function OpenInApp({ slug, inviteUrl }: { slug: string; inviteUrl: string
           onClick={() => track('open_in_app_click', { platform })}
           className="w-full max-w-[300px] rounded-[15px] bg-terracotta px-6 py-[14px] text-[16px] font-bold text-on-dark shadow-[0_4px_0_var(--color-terracotta-dk)] transition-all active:translate-y-1 active:shadow-none"
         >
-          Ouvrir dans l&apos;app
+          {messages.openInApp}
         </a>
       )}
 
-      {platform === 'ios' ? <IosSoonBadge /> : <PlayStoreButton platform={platform} context="interstitial" />}
+      {platform === 'ios' ? (
+        <IosSoonBadge messages={messages} />
+      ) : (
+        <PlayStoreButton platform={platform} context="interstitial" messages={messages} />
+      )}
 
       <div className="mt-4 w-full max-w-[320px] rounded-[18px] border border-line-2 bg-card p-4 text-left">
         <p className="text-[13px] leading-[1.5] text-body">
-          Tu viens d&apos;installer l&apos;app ? Rouvre ce lien — ou colle-le directement dans Komogo :
+          {messages.justInstalled}
         </p>
         <div className="mt-3 flex items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-[10px] bg-soft px-3 py-2 text-[12px] text-ink">
@@ -51,14 +64,14 @@ export function OpenInApp({ slug, inviteUrl }: { slug: string; inviteUrl: string
             onClick={copyInviteUrl}
             className="shrink-0 rounded-[10px] bg-ink px-3 py-2 text-[12px] font-bold text-on-dark transition-all active:translate-y-[2px]"
           >
-            {copied ? 'Copié ✓' : 'Copier'}
+            {copied ? messages.copied : messages.copy}
           </button>
         </div>
       </div>
 
       {platform === 'desktop' && (
         <p className="max-w-[300px] text-[13px] leading-[1.5] text-muted">
-          Ouvre ce lien sur ton téléphone pour rejoindre l&apos;événement dans l&apos;app.
+          {messages.openOnPhone}
         </p>
       )}
     </div>

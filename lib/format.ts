@@ -1,3 +1,5 @@
+import { dateLocaleOf, type Locale } from './locale'
+
 function localDate(iso: string): Date {
   return new Date(`${iso}T12:00:00`)
 }
@@ -5,13 +7,17 @@ function localDate(iso: string): Date {
 export function formatEventDates(
   start: string | null,
   end: string | null,
-  { month = 'long', fallback = 'Dates à définir' }: { month?: 'short' | 'long'; fallback?: string } = {},
+  {
+    month = 'long',
+    fallback = 'Dates à définir',
+    locale = 'fr',
+  }: { month?: 'short' | 'long'; fallback?: string; locale?: Locale } = {},
 ): string {
   if (!start) return fallback
   const last = end ?? start
   const startDate = localDate(start)
   const endDate = localDate(last)
-  const monthName = (d: Date) => d.toLocaleDateString('fr-FR', { month })
+  const monthName = (d: Date) => d.toLocaleDateString(dateLocaleOf(locale), { month })
   if (start === last) return `${startDate.getDate()} ${monthName(startDate)}`
   if (startDate.getMonth() === endDate.getMonth()) {
     return `${startDate.getDate()} → ${endDate.getDate()} ${monthName(endDate)}`

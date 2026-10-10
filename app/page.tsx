@@ -2,11 +2,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { detectPlatform } from '@/lib/store'
+import { messagesFor } from '@/lib/messages'
+import { requestLocale } from '@/lib/request-locale'
 import { DownloadSection } from './DownloadSection'
 
 export default async function LandingPage() {
   const userAgent = (await headers()).get('user-agent') ?? ''
   const platform = detectPlatform(userAgent)
+  const messages = messagesFor(await requestLocale())
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-6 pb-10 pt-8">
@@ -26,9 +29,9 @@ export default async function LandingPage() {
         </h1>
 
         <p className="animate-rise-up mt-5 max-w-[300px] text-[16px] leading-[1.5] text-body" style={{ animationDelay: '.08s' }}>
-          Organise tes voyages entre amis.
+          {messages.tagline}
           <br />
-          Sans le bazar des groupes de discussion.
+          {messages.taglineSecondLine}
         </p>
 
         <div className="animate-rise-up relative mt-10" style={{ animationDelay: '.16s' }}>
@@ -38,7 +41,7 @@ export default async function LandingPage() {
           />
           <Image
             src="/screenshot-mobile.png"
-            alt="L'app Komogo sur un téléphone : le programme du séjour, qui vient, qui conduit."
+            alt={messages.screenshotAlt}
             width={1080}
             height={2400}
             priority
@@ -46,21 +49,21 @@ export default async function LandingPage() {
           />
         </div>
 
-        <DownloadSection platform={platform} />
+        <DownloadSection platform={platform} messages={messages} />
       </section>
 
       <footer className="flex items-center justify-center gap-4 text-[12px] text-muted">
         <Link href="/aide" className="underline underline-offset-2">
-          Aide
+          {messages.help}
         </Link>
         <Link href="/conditions" className="underline underline-offset-2">
-          Conditions
+          {messages.terms}
         </Link>
         <Link href="/confidentialite" className="underline underline-offset-2">
-          Confidentialité
+          {messages.privacy}
         </Link>
         <Link href="/suppression-compte" className="underline underline-offset-2">
-          Supprimer mon compte
+          {messages.deleteAccount}
         </Link>
       </footer>
     </main>

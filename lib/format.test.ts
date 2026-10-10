@@ -28,3 +28,9 @@ describe('formatEventDates', () => {
     expect(formatEventDates('2026-07-05', '2026-07-05')).toBe('5 juillet')
   })
 })
+
+describe('formatEventDates en anglais', () => {
+  it('écrit le mois en anglais', () => {
+    expect(formatEventDates('2026-07-05', '2026-07-07', { locale: 'en' })).toBe('5 → 7 July')
+  })
+})
