@@ -16,7 +16,8 @@ const fr = {
   scanToInstall: "Scanne avec ton téléphone pour installer l'app",
   crewInvitesYou: "Ton crew t'invite",
   datesToBeSet: 'Dates à définir',
-  alreadyIn: (count: number) => (count === 1 ? 'déjà 1 partant·e' : `déjà ${count} partant·es`),
+  alreadyInOne: 'déjà 1 partant·e',
+  alreadyInMany: 'déjà {count} partant·es',
   openInApp: "Ouvrir dans l'app",
   justInstalled: "Tu viens d'installer l'app ? Rouvre ce lien — ou colle-le directement dans Komogo :",
   copied: 'Copié ✓',
@@ -33,9 +34,10 @@ const fr = {
   somethingBroke: 'Aïe, ça a coincé',
   unexpectedError: 'Une erreur inattendue est survenue. Réessaie dans un instant.',
   retry: 'Réessayer',
-}
+} satisfies Record<string, string>
 
-export type Messages = { [Key in keyof typeof fr]: (typeof fr)[Key] extends string ? string : (typeof fr)[Key] }
+// Strings only: the object is handed as-is to Client Components, which cannot receive functions.
+export type Messages = Record<keyof typeof fr, string>
 
 const en: Messages = {
   siteDescription: 'The app that organizes your trips with friends. One link in the group chat, everyone signs up in 30 seconds.',
@@ -53,7 +55,8 @@ const en: Messages = {
   scanToInstall: 'Scan with your phone to install the app',
   crewInvitesYou: 'Your crew invites you',
   datesToBeSet: 'Dates to be set',
-  alreadyIn: (count: number) => (count === 1 ? '1 already in' : `${count} already in`),
+  alreadyInOne: '1 already in',
+  alreadyInMany: '{count} already in',
   openInApp: 'Open in the app',
   justInstalled: 'Just installed the app? Open this link again — or paste it straight into Komogo:',
   copied: 'Copied ✓',
@@ -76,4 +79,8 @@ const MESSAGES: Record<Locale, Messages> = { fr, en }
 
 export function messagesFor(locale: Locale): Messages {
   return MESSAGES[locale]
+}
+
+export function alreadyIn(messages: Messages, count: number): string {
+  return count === 1 ? messages.alreadyInOne : messages.alreadyInMany.replace('{count}', String(count))
 }

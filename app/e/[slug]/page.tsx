@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getEventPreview } from '@/lib/event-preview'
 import { formatEventDates } from '@/lib/format'
 import { clientEnv } from '@/lib/env/client'
-import { messagesFor } from '@/lib/messages'
+import { alreadyIn, messagesFor } from '@/lib/messages'
 import { requestLocale } from '@/lib/request-locale'
 import { OpenInApp } from './OpenInApp'
 
@@ -66,7 +66,7 @@ export default async function EventInterstitialPage({
               ))}
             </span>
             <span className="text-[14px] text-muted">
-              {messages.alreadyIn(event.participant_count)}
+              {alreadyIn(messages, event.participant_count)}
             </span>
           </div>
         )}
