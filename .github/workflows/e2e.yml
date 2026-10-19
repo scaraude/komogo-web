@@ -1,0 +1,46 @@
+name: E2E
+
+on:
+  # Vercel publie un deployment_status par déploiement (preview et prod).
+  deployment_status:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    if: github.event_name != 'deployment_status' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      IS_PREVIEW: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment != 'Production' }}
+      # La prod se teste sur le vrai domaine : l'URL unique du déploiement est protégée par Vercel.
+      BASE_URL: ${{ (github.event_name == 'deployment_status' && github.event.deployment.environment != 'Production') && github.event.deployment_status.environment_url || 'https://www.komogo.fr' }}
+      TEST_EVENT_SLUG: ${{ secrets.TEST_EVENT_SLUG }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Secret de bypass présent
+        if: env.IS_PREVIEW == 'true' && env.VERCEL_AUTOMATION_BYPASS_SECRET == ''
+        run: |
+          echo "::error::VERCEL_AUTOMATION_BYPASS_SECRET manquant : les previews Vercel sont protégées (cf. README)."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
+      - run: node test-e2e.mjs
+      - name: Alerte Discord
+        if: failure() && env.IS_PREVIEW != 'true'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_KOMOGO_WEB_CI }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n --arg content "🚨 **komogo-web** : les tests e2e échouent sur $BASE_URL (déclencheur : $GITHUB_EVENT_NAME). $RUN_URL" '{content: $content}' \
+            | curl -sSf -H 'Content-Type: application/json' -d @- "$DISCORD_WEBHOOK_URL"

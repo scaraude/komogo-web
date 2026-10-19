@@ -19,7 +19,7 @@ Le site `komogo.fr` est une **passerelle vers l'app native Komogo** ([repo `scar
 
 ## Accès aux données
 
-Le site partage le projet Supabase de l'app, mais `anon` n'a aucun droit sur les tables. L'unique lecture est la RPC `security definer` `get_event_preview(p_slug)` (titre, dates, destination, compte de participants, initiales). Les migrations vivent dans le repo de l'app — celles de `supabase/` ici sont l'historique de l'ancienne web app, elles ne sont plus la source.
+Le site partage le projet Supabase de l'app, mais `anon` n'a aucun droit sur les tables. L'unique lecture est la RPC `security definer` `get_event_preview(p_slug)` (titre, dates, destination, compte de participants, initiales). Les migrations vivent dans le repo de l'app.
 
 ## Service worker
 
@@ -33,10 +33,32 @@ pnpm dev        # http://localhost:3000
 pnpm typecheck
 pnpm test       # vitest (unitaires)
 pnpm lint
-node test-e2e.mjs   # e2e Playwright contre la prod (BASE_URL et TEST_EVENT_SLUG pour surcharger)
+```
+
+Tests e2e (Playwright) : contre la prod par défaut, `BASE_URL` pour viser un build local, `TEST_EVENT_SLUG` pour tester l'interstitiel sur un vrai Komo.
+
+```bash
+pnpm exec playwright install --only-shell chromium   # une fois par version de Playwright
+pnpm build && PORT=3123 pnpm start &
+BASE_URL=http://localhost:3123 TEST_EVENT_SLUG=<slug> node test-e2e.mjs
 ```
 
 Variables d'env : voir `.env.local.example` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`).
+
+## CI et alertes
+
+- `ci.yml` : lint, typecheck et tests unitaires sur chaque push et chaque PR.
+- `e2e.yml` : `test-e2e.mjs` après chaque déploiement Vercel prêt (preview → URL de la preview, prod → `www.komogo.fr`), puis toutes les heures et à la demande contre la prod. Un échec en prod poste une alerte dans le salon Discord de la CI ; un échec de preview reste un check rouge sur la PR.
+
+Secrets GitHub requis :
+
+| Secret | Rôle |
+| --- | --- |
+| `DISCORD_WEBHOOK_URL_KOMOGO_WEB_CI` | Webhook du salon Discord qui reçoit les alertes. |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | Les previews sont derrière Vercel Authentication : Vercel → Settings → Deployment Protection → Protection Bypass for Automation. |
+| `TEST_EVENT_SLUG` | Slug d'un Komo stable, pour tester l'interstitiel et l'image OG. Sans lui, ces deux tests sont sautés. |
+
+GitHub désactive les workflows planifiés d'un repo public après 60 jours sans activité : le réactiver dans l'onglet Actions si besoin.
 
 ## Déploiement
 

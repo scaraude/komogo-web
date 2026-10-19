@@ -3,10 +3,18 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'https://www.komogo.fr'
 const APEX = BASE.replace('://www.', '://')
 const TEST_EVENT_SLUG = process.env.TEST_EVENT_SLUG
+// Les previews Vercel sont protégées : la CI passe le secret de « Protection Bypass for Automation ».
+const BYPASS_HEADERS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+  ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET }
+  : {}
+
+function get(url, init = {}) {
+  return fetch(url, { ...init, headers: { ...BYPASS_HEADERS, ...init.headers } })
+}
 
 async function run() {
   const browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext()
+  const context = await browser.newContext({ locale: 'fr-FR', extraHTTPHeaders: BYPASS_HEADERS })
   const page = await context.newPage()
   const errors = []
 
@@ -36,9 +44,26 @@ async function run() {
     if (!href.includes('id6801566470')) throw new Error(`href inattendu: ${href}`)
   })
 
+  await check('Landing en anglais pour un navigateur anglophone', async () => {
+    const englishContext = await browser.newContext({ locale: 'en-US', extraHTTPHeaders: BYPASS_HEADERS })
+    const englishPage = await englishContext.newPage()
+    await englishPage.goto(BASE, { waitUntil: 'networkidle' })
+    const main = await englishPage.textContent('main')
+    await englishContext.close()
+    if (!main.includes('Organize your trips with friends.')) throw new Error('accroche anglaise absente')
+  })
+
+  await check('/auth/confirm propose de revenir dans l’app', async () => {
+    await page.goto(`${BASE}/auth/confirm?token_hash=e2e&type=magiclink`, { waitUntil: 'networkidle' })
+    const h1 = await page.textContent('h1')
+    if (h1.trim() !== 'Encore un geste') throw new Error(`h1 inattendu: "${h1}"`)
+    const href = await page.getAttribute('a[href^="komogo:"]', 'href')
+    if (!href.includes('token_hash=e2e')) throw new Error(`deep link inattendu: ${href}`)
+  })
+
   for (const path of ['/mes-komos', '/connexion']) {
     await check(`${path} redirige vers /`, async () => {
-      const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })
+      const res = await get(`${BASE}${path}`, { redirect: 'manual' })
       if (res.status !== 308) throw new Error(`status ${res.status}`)
       const location = res.headers.get('location')
       if (new URL(location, BASE).pathname !== '/') throw new Error(`location ${location}`)
@@ -47,31 +72,33 @@ async function run() {
 
   for (const path of ['/confidentialite', '/suppression-compte']) {
     await check(`${path} répond 200`, async () => {
-      const res = await fetch(`${BASE}${path}`)
+      const res = await get(`${BASE}${path}`)
       if (res.status !== 200) throw new Error(`status ${res.status}`)
     })
   }
 
   await check('assetlinks.json servi sur l’apex sans redirection', async () => {
-    const res = await fetch(`${APEX}/.well-known/assetlinks.json`, { redirect: 'manual' })
+    const res = await get(`${APEX}/.well-known/assetlinks.json`, { redirect: 'manual' })
     if (res.status !== 200) throw new Error(`status ${res.status}`)
     const body = await res.json()
     if (!JSON.stringify(body).includes('fr.komogo.app')) throw new Error('package absent')
   })
 
   await check('apple-app-site-association servi en 200', async () => {
-    const res = await fetch(`${BASE}/.well-known/apple-app-site-association`, { redirect: 'manual' })
+    const res = await get(`${BASE}/.well-known/apple-app-site-association`, { redirect: 'manual' })
     if (res.status !== 200) throw new Error(`status ${res.status}`)
   })
 
   await check('Slug inconnu répond 404', async () => {
-    const res = await fetch(`${BASE}/e/slug-inexistant-e2e`)
+    const res = await get(`${BASE}/e/slug-inexistant-e2e`)
     if (res.status !== 404) throw new Error(`status ${res.status}`)
   })
 
   if (TEST_EVENT_SLUG) {
     await check('Interstitiel affiche le Komo et le store', async () => {
       await page.goto(`${BASE}/e/${TEST_EVENT_SLUG}`, { waitUntil: 'networkidle' })
+      const main = await page.textContent('main')
+      if (!main.includes("Ton crew t'invite")) throw new Error('page inattendue (erreur ?)')
       const body = await page.content()
       if (!body.includes('play.google.com')) throw new Error('lien store absent')
       const title = await page.textContent('h1')
@@ -79,7 +106,7 @@ async function run() {
     })
 
     await check('Image OG répond 200', async () => {
-      const res = await fetch(`${BASE}/api/og/${TEST_EVENT_SLUG}`)
+      const res = await get(`${BASE}/api/og/${TEST_EVENT_SLUG}`)
       if (res.status !== 200) throw new Error(`status ${res.status}`)
       if (!res.headers.get('content-type')?.includes('image')) throw new Error('pas une image')
     })
