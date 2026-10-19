@@ -1,4 +1,5 @@
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=fr.komogo.app'
+export const APP_STORE_URL = 'https://apps.apple.com/fr/app/komogo/id6801566470'
 
 export const APP_SCHEME = 'komogo'
 

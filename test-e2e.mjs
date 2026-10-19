@@ -31,6 +31,11 @@ async function run() {
     if (!href.includes('fr.komogo.app')) throw new Error(`href inattendu: ${href}`)
   })
 
+  await check('Lien App Store présent', async () => {
+    const href = await page.getAttribute('a[href*="apps.apple.com"]', 'href')
+    if (!href.includes('id6801566470')) throw new Error(`href inattendu: ${href}`)
+  })
+
   for (const path of ['/mes-komos', '/connexion']) {
     await check(`${path} redirige vers /`, async () => {
       const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })

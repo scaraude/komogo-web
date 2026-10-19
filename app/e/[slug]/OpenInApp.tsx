@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { track } from '@vercel/analytics'
 import { eventAndroidIntentLink, eventDeepLink } from '@/lib/store'
-import { PlayStoreButton, IosSoonBadge } from '@/app/DownloadSection'
+import { StoreButtons } from '@/app/DownloadSection'
 import { usePlatform } from '@/app/usePlatform'
 import type { Messages } from '@/lib/messages'
 
@@ -35,9 +35,9 @@ export function OpenInApp({
 
   return (
     <div className="mt-10 flex w-full flex-col items-center gap-4">
-      {platform === 'android' && (
+      {platform !== 'desktop' && (
         <a
-          href={eventAndroidIntentLink(slug)}
+          href={platform === 'android' ? eventAndroidIntentLink(slug) : eventDeepLink(slug)}
           onClick={() => track('open_in_app_click', { platform })}
           className="w-full max-w-[300px] rounded-[15px] bg-terracotta px-6 py-[14px] text-[16px] font-bold text-on-dark shadow-[0_4px_0_var(--color-terracotta-dk)] transition-all active:translate-y-1 active:shadow-none"
         >
@@ -45,11 +45,7 @@ export function OpenInApp({
         </a>
       )}
 
-      {platform === 'ios' ? (
-        <IosSoonBadge messages={messages} />
-      ) : (
-        <PlayStoreButton platform={platform} context="interstitial" messages={messages} />
-      )}
+      <StoreButtons platform={platform} context="interstitial" messages={messages} />
 
       <div className="mt-4 w-full max-w-[320px] rounded-[18px] border border-line-2 bg-card p-4 text-left">
         <p className="text-[13px] leading-[1.5] text-body">
