@@ -1,6 +1,6 @@
 export type Locale = 'fr' | 'en'
 
-export const DEFAULT_LOCALE: Locale = 'fr'
+const DEFAULT_LOCALE: Locale = 'fr'
 
 const SUPPORTED_LOCALES: readonly Locale[] = ['fr', 'en']
 
