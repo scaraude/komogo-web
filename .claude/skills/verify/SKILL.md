@@ -19,8 +19,9 @@ BASE_URL=http://localhost:3123 TEST_EVENT_SLUG=<slug> node test-e2e.mjs
 
 - Build de prod, pas `pnpm dev` : certaines erreurs (props non sérialisables
   passées à un Client Component, par exemple) ne sortent qu'au rendu de prod.
-- `TEST_EVENT_SLUG` : un Komo existant, le même que le secret GitHub. Sans lui,
-  l'interstitiel et l'image OG ne sont pas testés.
+- `TEST_EVENT_SLUG` : le Komo de démo de l'équipe, le même que le secret GitHub,
+  jamais celui d'un utilisateur (chaque appel est compté dans
+  `event_preview_hits`). Sans lui, l'interstitiel et l'image OG ne sont pas testés.
 
 ## Au-delà de test-e2e.mjs
 

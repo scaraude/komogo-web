@@ -41,22 +41,25 @@ Tests e2e (Playwright) : contre la prod par défaut, `BASE_URL` pour viser un bu
 pnpm exec playwright install --only-shell chromium   # une fois par version de Playwright
 pnpm build && PORT=3123 pnpm start &
 BASE_URL=http://localhost:3123 TEST_EVENT_SLUG=<slug> node test-e2e.mjs
+TEST_EVENT_SLUG=<slug> ./healthcheck.sh             # healthcheck contre la prod
 ```
 
 Variables d'env : voir `.env.local.example` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`).
 
 ## CI et alertes
 
-- `ci.yml` : lint, typecheck et tests unitaires sur chaque push et chaque PR.
-- `e2e.yml` : `test-e2e.mjs` après chaque déploiement Vercel prêt (preview → URL de la preview, prod → `www.komogo.fr`), puis toutes les heures et à la demande contre la prod. Un échec en prod poste une alerte dans le salon Discord de la CI ; un échec de preview reste un check rouge sur la PR.
+- `ci.yml`, sur chaque PR et chaque push sur `main` (les deux checks sont à rendre obligatoires sur `main` : sans merge, Vercel ne déploie pas la prod) :
+  - job `check` : lint, typecheck, tests unitaires ;
+  - job `e2e` : build de prod, puis `test-e2e.mjs` contre ce build.
+- `healthcheck.yml` : `healthcheck.sh` (curl, sans navigateur) contre la prod, après chaque déploiement de prod, toutes les heures et à la demande. Il vérifie que la landing et un interstitiel s'affichent (donc que la RPC `get_event_preview` répond, son schéma vivant dans le repo de l'app) et que les fichiers `.well-known` sont servis sur l'apex. En cas d'échec, une alerte part dans le salon Discord de la CI.
 
-Secrets GitHub requis :
+Secrets GitHub :
 
 | Secret | Rôle |
 | --- | --- |
-| `DISCORD_WEBHOOK_URL_KOMOGO_WEB_CI` | Webhook du salon Discord qui reçoit les alertes. |
-| `VERCEL_AUTOMATION_BYPASS_SECRET` | Les previews sont derrière Vercel Authentication : Vercel → Settings → Deployment Protection → Protection Bypass for Automation. |
-| `TEST_EVENT_SLUG` | Slug d'un Komo stable, pour tester l'interstitiel et l'image OG. Sans lui, ces deux tests sont sautés. |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Build de la CI (mêmes valeurs que `.env.local`). |
+| `TEST_EVENT_SLUG` | Slug du Komo de démo de l'équipe, pour l'interstitiel et l'image OG. Chaque appel ajoute une ligne à `event_preview_hits` pour ce Komo : ne jamais y mettre celui d'un utilisateur. |
+| `DISCORD_WEBHOOK_URL_KOMOGO_WEB_CI` | Webhook du salon Discord qui reçoit les alertes du healthcheck. |
 
 GitHub désactive les workflows planifiés d'un repo public après 60 jours sans activité : le réactiver dans l'onglet Actions si besoin.
 

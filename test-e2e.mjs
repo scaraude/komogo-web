@@ -3,18 +3,9 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'https://www.komogo.fr'
 const APEX = BASE.replace('://www.', '://')
 const TEST_EVENT_SLUG = process.env.TEST_EVENT_SLUG
-// Les previews Vercel sont protégées : la CI passe le secret de « Protection Bypass for Automation ».
-const BYPASS_HEADERS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-  ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET }
-  : {}
-
-function get(url, init = {}) {
-  return fetch(url, { ...init, headers: { ...BYPASS_HEADERS, ...init.headers } })
-}
-
 async function run() {
   const browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext({ locale: 'fr-FR', extraHTTPHeaders: BYPASS_HEADERS })
+  const context = await browser.newContext({ locale: 'fr-FR' })
   const page = await context.newPage()
   const errors = []
 
@@ -45,7 +36,7 @@ async function run() {
   })
 
   await check('Landing en anglais pour un navigateur anglophone', async () => {
-    const englishContext = await browser.newContext({ locale: 'en-US', extraHTTPHeaders: BYPASS_HEADERS })
+    const englishContext = await browser.newContext({ locale: 'en-US' })
     const englishPage = await englishContext.newPage()
     await englishPage.goto(BASE, { waitUntil: 'networkidle' })
     const main = await englishPage.textContent('main')
@@ -63,7 +54,7 @@ async function run() {
 
   for (const path of ['/mes-komos', '/connexion']) {
     await check(`${path} redirige vers /`, async () => {
-      const res = await get(`${BASE}${path}`, { redirect: 'manual' })
+      const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })
       if (res.status !== 308) throw new Error(`status ${res.status}`)
       const location = res.headers.get('location')
       if (new URL(location, BASE).pathname !== '/') throw new Error(`location ${location}`)
@@ -72,25 +63,25 @@ async function run() {
 
   for (const path of ['/confidentialite', '/suppression-compte']) {
     await check(`${path} répond 200`, async () => {
-      const res = await get(`${BASE}${path}`)
+      const res = await fetch(`${BASE}${path}`)
       if (res.status !== 200) throw new Error(`status ${res.status}`)
     })
   }
 
   await check('assetlinks.json servi sur l’apex sans redirection', async () => {
-    const res = await get(`${APEX}/.well-known/assetlinks.json`, { redirect: 'manual' })
+    const res = await fetch(`${APEX}/.well-known/assetlinks.json`, { redirect: 'manual' })
     if (res.status !== 200) throw new Error(`status ${res.status}`)
     const body = await res.json()
     if (!JSON.stringify(body).includes('fr.komogo.app')) throw new Error('package absent')
   })
 
   await check('apple-app-site-association servi en 200', async () => {
-    const res = await get(`${BASE}/.well-known/apple-app-site-association`, { redirect: 'manual' })
+    const res = await fetch(`${BASE}/.well-known/apple-app-site-association`, { redirect: 'manual' })
     if (res.status !== 200) throw new Error(`status ${res.status}`)
   })
 
   await check('Slug inconnu répond 404', async () => {
-    const res = await get(`${BASE}/e/slug-inexistant-e2e`)
+    const res = await fetch(`${BASE}/e/slug-inexistant-e2e`)
     if (res.status !== 404) throw new Error(`status ${res.status}`)
   })
 
@@ -106,7 +97,7 @@ async function run() {
     })
 
     await check('Image OG répond 200', async () => {
-      const res = await get(`${BASE}/api/og/${TEST_EVENT_SLUG}`)
+      const res = await fetch(`${BASE}/api/og/${TEST_EVENT_SLUG}`)
       if (res.status !== 200) throw new Error(`status ${res.status}`)
       if (!res.headers.get('content-type')?.includes('image')) throw new Error('pas une image')
     })

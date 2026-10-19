@@ -1,0 +1,30 @@
+name: Healthcheck
+
+on:
+  # Vercel publie un deployment_status par déploiement : seul celui de la prod nous intéresse.
+  deployment_status:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  healthcheck:
+    if: github.event_name != 'deployment_status' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./healthcheck.sh
+        env:
+          TEST_EVENT_SLUG: ${{ secrets.TEST_EVENT_SLUG }}
+      - name: Alerte Discord
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_KOMOGO_WEB_CI }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n --arg content "🚨 **komogo.fr** : le healthcheck échoue (déclencheur : $GITHUB_EVENT_NAME). $RUN_URL" '{content: $content}' \
+            | curl -sSf -H 'Content-Type: application/json' -d @- "$DISCORD_WEBHOOK_URL"
