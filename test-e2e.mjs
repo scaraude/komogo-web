@@ -3,10 +3,9 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'https://www.komogo.fr'
 const APEX = BASE.replace('://www.', '://')
 const TEST_EVENT_SLUG = process.env.TEST_EVENT_SLUG
-
 async function run() {
   const browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext()
+  const context = await browser.newContext({ locale: 'fr-FR' })
   const page = await context.newPage()
   const errors = []
 
@@ -34,6 +33,23 @@ async function run() {
   await check('Lien App Store présent', async () => {
     const href = await page.getAttribute('a[href*="apps.apple.com"]', 'href')
     if (!href.includes('id6801566470')) throw new Error(`href inattendu: ${href}`)
+  })
+
+  await check('Landing en anglais pour un navigateur anglophone', async () => {
+    const englishContext = await browser.newContext({ locale: 'en-US' })
+    const englishPage = await englishContext.newPage()
+    await englishPage.goto(BASE, { waitUntil: 'networkidle' })
+    const main = await englishPage.textContent('main')
+    await englishContext.close()
+    if (!main.includes('Organize your trips with friends.')) throw new Error('accroche anglaise absente')
+  })
+
+  await check('/auth/confirm propose de revenir dans l’app', async () => {
+    await page.goto(`${BASE}/auth/confirm?token_hash=e2e&type=magiclink`, { waitUntil: 'networkidle' })
+    const h1 = await page.textContent('h1')
+    if (h1.trim() !== 'Encore un geste') throw new Error(`h1 inattendu: "${h1}"`)
+    const href = await page.getAttribute('a[href^="komogo:"]', 'href')
+    if (!href.includes('token_hash=e2e')) throw new Error(`deep link inattendu: ${href}`)
   })
 
   for (const path of ['/mes-komos', '/connexion']) {
@@ -72,6 +88,8 @@ async function run() {
   if (TEST_EVENT_SLUG) {
     await check('Interstitiel affiche le Komo et le store', async () => {
       await page.goto(`${BASE}/e/${TEST_EVENT_SLUG}`, { waitUntil: 'networkidle' })
+      const main = await page.textContent('main')
+      if (!main.includes("Ton crew t'invite")) throw new Error('page inattendue (erreur ?)')
       const body = await page.content()
       if (!body.includes('play.google.com')) throw new Error('lien store absent')
       const title = await page.textContent('h1')

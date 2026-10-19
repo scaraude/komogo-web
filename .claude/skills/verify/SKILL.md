@@ -1,49 +1,45 @@
 ---
 name: verify
-description: Vérifier un changement Komo en pilotant l'app en vrai (dev server + Playwright), avec le flow d'auth anonyme.
+description: Vérifier un changement de komogo-web en vrai (build de prod + e2e Playwright), en FR/EN et sur Android/iPhone/desktop.
 ---
 
-# Vérifier Komo end-to-end
+# Vérifier komogo-web
+
+`komogo.fr` est une passerelle vers l'app native (cf. README) : landing,
+interstitiel `/e/[slug]`, `/auth/confirm`, pages légales. Rien à créer ni à
+semer, on vérifie le rendu.
 
 ## Lancer
 
 ```bash
-npm run dev &   # http://localhost:3000 — pointe sur le Supabase distant (.env.local)
+pnpm build && PORT=3123 pnpm start &
+pnpm exec playwright install --only-shell chromium   # une fois par version de Playwright
+BASE_URL=http://localhost:3123 TEST_EVENT_SLUG=<slug> node test-e2e.mjs
 ```
 
-Playwright est dans `node_modules` (Chromium déjà téléchargé) :
-`require('<repo>/node_modules/playwright')` dans un script Node du scratchpad.
-Viewport mobile : `{ width: 400, height: 850 }` (l'app est verrouillée à ~440px).
+- Build de prod, pas `pnpm dev` : certaines erreurs (props non sérialisables
+  passées à un Client Component, par exemple) ne sortent qu'au rendu de prod.
+- `TEST_EVENT_SLUG` : le Komo de démo de l'équipe, le même que le secret GitHub,
+  jamais celui d'un utilisateur (chaque appel est compté dans
+  `event_preview_hits`). Sans lui, l'interstitiel et l'image OG ne sont pas testés.
 
-## Auth / atteindre un event
+## Au-delà de test-e2e.mjs
 
-Pas de mot de passe — sessions Supabase anonymes créées par les server actions.
-Chaque nouveau contexte navigateur = nouvel utilisateur.
+Quand le changement dépend de la langue ou de la plateforme, piloter Playwright
+dans un script du scratchpad (`require('<repo>/node_modules/playwright')`) :
 
-- **Créer un event** : landing → bouton `Go. →` → `#title`, `#destination`,
-  `input[name=date_start|date_end]` → « Créer le plan → » → page join.
-- **Join créateur** : directement `input[name=pseudo]` → submit.
-- **Join invité** : étape email d'abord (`input[name=email]`, requise — utiliser
-  `*.test@example.com`) → « Continuer → » → pseudo.
-
-## Semer des données (via l'UI — ne pas insérer en SQL dans la base partagée)
-
-- Transport : `?tab=transport` → « Je propose un trajet » → mode (boutons), `label`,
-  `departure_city`, `departure_date`, `departure_time` (+ `arrival_time` en mode train)
-  → « Proposer → ».
-- Activité : `?tab=activites` → « Proposer une activité » → `label`, `activity_date`,
-  `start_time` → « Proposer → ».
-- Repas : `?tab=bouffe` → DashedAddButton du jour (« ＋ ajouter un repas » /
-  « Aucun repas prévu — ajouter ») → input placeholder « Risotto » → « Créer le repas ».
+- Langue : `browser.newContext({ locale: 'en-US' })`, le site lit `Accept-Language`.
+- Plateforme : `userAgent` Android / iPhone / desktop (`detectPlatform` dans `lib/store.ts`),
+  viewport `{ width: 400, height: 850 }`.
+- Sur Android, l'interstitiel et `/auth/confirm` redirigent vers `komogo://` :
+  neutraliser `window.location.replace` via `context.addInitScript` pour garder
+  la page inspectable.
+- Ignorer les 404 sur `/_vercel/insights` et `/_vercel/speed-insights` : ces
+  scripts n'existent qu'une fois déployé.
 
 ## Pièges
 
-- Les créations sont **optimistes** : attendre la revalidation (recharger la page)
-  avant de vérifier une vue serveur, sinon race.
-- Le hub streame : `waitForSelector` sur du vrai contenu avant screenshot,
-  pas juste `waitForURL`.
-- `innerText` reflète les transformations CSS (`uppercase` etc.) — comparer en
-  conséquence.
-- **Nettoyage** : supprimer l'event de test à la fin
-  (`delete from events where slug = '<slug>' and title = '<titre de test>'`,
-  cascade sur les enfants).
+- Lecture seule : la base Supabase est partagée avec l'app native, ne rien y
+  écrire.
+- Une page d'erreur répond parfois 200 : vérifier le contenu affiché, pas
+  seulement le statut HTTP.
