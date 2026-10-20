@@ -34,7 +34,7 @@ export default async function LandingPage() {
   const messages = messagesFor(locale)
 
   const names = screenNames(messages)
-  const screen = (id: ScreenId) => ({ src: `/screens/${id}.webp`, alt: messages.screenAlt.replace('{screen}', names[id]) })
+  const screen = (id: ScreenId) => ({ src: `/screens/${id}.png`, alt: messages.screenAlt.replace('{screen}', names[id]) })
   const heroScreens = HERO_SCREENS.map((id) => ({
     ...screen(id),
     dotLabel: messages.showScreen.replace('{screen}', names[id]),
