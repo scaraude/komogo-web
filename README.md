@@ -25,6 +25,10 @@ Le site partage le projet Supabase de l'app, mais `anon` n'a aucun droit sur les
 
 `public/sw.js` est un **kill-switch** : l'ancienne PWA installait un service worker chez les visiteurs, celui-ci le remplace, se désinscrit et recharge les onglets. Le garder tant que des navigateurs peuvent encore porter l'ancien.
 
+## Captures de l'app
+
+`public/screens/` ne se modifie pas à la main : le workflow `web-screens.yml` du repo de l'app y pousse ses captures de référence (`docs/design/screenshots/`) à chaque passage en production (soumission aux stores ou OTA de production), prises au commit en production, sous leur nom anglais, en PNG 1080 × 2400. Le site montre donc l'app que les visiteurs vont télécharger, pas le `main` de l'app. `next/image` les redimensionne et les convertit pour le navigateur. Pour montrer un autre écran, l'ajouter à la liste du workflow et au tableau « Sur le site komogo.fr » du README des captures, dans le repo de l'app.
+
 ## Développement
 
 ```bash
