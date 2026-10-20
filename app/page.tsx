@@ -30,7 +30,8 @@ function screenNames(messages: Messages): Record<ScreenId, string> {
 export default async function LandingPage() {
   const userAgent = (await headers()).get('user-agent') ?? ''
   const platform = detectPlatform(userAgent)
-  const messages = messagesFor(await requestLocale())
+  const locale = await requestLocale()
+  const messages = messagesFor(locale)
 
   const names = screenNames(messages)
   const screen = (id: ScreenId) => ({ src: `/screens/${id}.webp`, alt: messages.screenAlt.replace('{screen}', names[id]) })
@@ -64,7 +65,7 @@ export default async function LandingPage() {
                 {messages.heroTitle}
               </h1>
               <p className="max-w-[499px] text-[20px] leading-[1.5] text-body">{messages.heroSubtitle}</p>
-              <HeroDownload platform={platform} messages={messages} />
+              <HeroDownload platform={platform} locale={locale} messages={messages} />
             </div>
 
             <div className="flex min-w-0 flex-[1_1_520px] justify-center pb-14 pt-10">
@@ -95,7 +96,7 @@ export default async function LandingPage() {
               </h2>
               <p className="text-[19px] text-on-dark-2">{messages.ctaText}</p>
             </div>
-            <CtaDownload platform={platform} messages={messages} />
+            <CtaDownload platform={platform} locale={locale} messages={messages} />
           </div>
         </section>
       </main>
@@ -116,6 +117,8 @@ export default async function LandingPage() {
             {messages.deleteAccount}
           </Link>
         </nav>
+        {/* Credit line required by Apple's guidelines wherever the App Store badge appears. */}
+        <p className="basis-full text-[12px] leading-[1.5] text-muted">{messages.trademarks}</p>
       </footer>
     </div>
   )
