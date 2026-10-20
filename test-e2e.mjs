@@ -22,7 +22,9 @@ async function run() {
   await check('Landing charge avec la signature', async () => {
     await page.goto(BASE, { waitUntil: 'networkidle' })
     const h1 = await page.textContent('h1')
-    if (!h1.includes('Crew. Plan.')) throw new Error(`h1 inattendu: "${h1}"`)
+    if (!h1.trim()) throw new Error('h1 vide')
+    const cta = await page.textContent('h2:has-text("Crew. Plan.")')
+    if (!cta.includes('Go.')) throw new Error(`signature inattendue: "${cta}"`)
   })
 
   await check('Lien Google Play présent', async () => {
@@ -41,7 +43,7 @@ async function run() {
     await englishPage.goto(BASE, { waitUntil: 'networkidle' })
     const main = await englishPage.textContent('main')
     await englishContext.close()
-    if (!main.includes('Organize your trips with friends.')) throw new Error('accroche anglaise absente')
+    if (!main.includes('What if the planning actually went well for once?')) throw new Error('titre anglais absent')
   })
 
   await check('/auth/confirm propose de revenir dans l’app', async () => {
