@@ -2,70 +2,121 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { detectPlatform } from '@/lib/store'
-import { messagesFor } from '@/lib/messages'
+import { messagesFor, type Messages } from '@/lib/messages'
 import { requestLocale } from '@/lib/request-locale'
-import { DownloadSection } from './DownloadSection'
+import { CtaDownload, HeroDownload } from './DownloadSection'
+import { FeatureScroll, type Feature } from './FeatureScroll'
+import { HeroCarousel } from './HeroCarousel'
+
+type ScreenId = 'hq' | 'dates' | 'plan' | 'crew' | 'feed' | 'lodging' | 'transport' | 'meals' | 'groceries' | 'activities'
+
+const HERO_SCREENS: ScreenId[] = ['hq', 'dates', 'plan', 'crew', 'feed', 'lodging']
+
+function screenNames(messages: Messages): Record<ScreenId, string> {
+  return {
+    hq: messages.screenHq,
+    dates: messages.screenDates,
+    plan: messages.screenPlan,
+    crew: messages.screenCrew,
+    feed: messages.screenFeed,
+    lodging: messages.screenLodging,
+    transport: messages.screenTransport,
+    meals: messages.screenMeals,
+    groceries: messages.screenGroceries,
+    activities: messages.screenActivities,
+  }
+}
 
 export default async function LandingPage() {
   const userAgent = (await headers()).get('user-agent') ?? ''
   const platform = detectPlatform(userAgent)
   const messages = messagesFor(await requestLocale())
 
+  const names = screenNames(messages)
+  const screen = (id: ScreenId) => ({ src: `/screens/${id}.webp`, alt: messages.screenAlt.replace('{screen}', names[id]) })
+  const heroScreens = HERO_SCREENS.map((id) => ({
+    ...screen(id),
+    dotLabel: messages.showScreen.replace('{screen}', names[id]),
+  }))
+  const features: Feature[] = [
+    { kicker: messages.step1Kicker, title: messages.step1Title, text: messages.step1Text, screen: screen('hq') },
+    { kicker: messages.step2Kicker, title: messages.step2Title, text: messages.step2Text, screen: screen('transport') },
+    { kicker: messages.step3Kicker, title: messages.step3Title, text: messages.step3Text, screen: screen('meals') },
+    { kicker: messages.step4Kicker, title: messages.step4Title, text: messages.step4Text, screen: screen('groceries') },
+    { kicker: messages.step5Kicker, title: messages.step5Title, text: messages.step5Text, screen: screen('activities') },
+  ]
+
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-6 pb-10 pt-8">
-      <header className="flex items-center justify-center gap-2">
-        <Image src="/komo-mark.png" alt="" width={1280} height={486} className="h-auto w-[46px]" />
-        <span className="text-[20px] font-bold tracking-[0.5px] text-ink" style={{ fontFamily: 'var(--font-fredoka)' }}>
-          Komogo
-        </span>
-      </header>
+    <div className="min-h-dvh bg-card text-ink">
+      <main>
+        <section className="overflow-hidden bg-white">
+          <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-10 p-6">
+            <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-[22px] py-6">
+              <Image
+                src="/komogo-logo.png"
+                alt="Komogo"
+                width={640}
+                height={453}
+                loading="eager"
+                className="h-[84px] w-auto self-start"
+              />
+              <h1 className="mt-7 max-w-[605px] font-serif text-[clamp(36px,4.2vw,56px)] font-semibold leading-[1.08]">
+                {messages.heroTitle}
+              </h1>
+              <p className="max-w-[499px] text-[20px] leading-[1.5] text-body">{messages.heroSubtitle}</p>
+              <HeroDownload platform={platform} messages={messages} />
+            </div>
 
-      <section className="flex flex-1 flex-col items-center justify-center py-10 text-center">
-        <h1 className="animate-rise-up">
-          <span className="sr-only">Komogo — </span>
-          <span className="block text-[38px] font-bold uppercase leading-[1.1] tracking-[1px] text-ink">
-            Crew. Plan. <span className="text-terracotta">Go.</span>
+            <div className="flex min-w-0 flex-[1_1_520px] justify-center pb-14 pt-10">
+              <HeroCarousel
+                screens={heroScreens}
+                label={messages.carouselLabel}
+                roleDescription={messages.carouselRoleDescription}
+                dotsLabel={messages.carouselDotsLabel}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto flex max-w-[1240px] flex-col items-center gap-3.5 px-6 pb-10 pt-[120px] text-center">
+          <span className="text-[14px] font-extrabold uppercase tracking-[0.12em] text-terracotta-dk">
+            {messages.introEyebrow}
           </span>
-        </h1>
+          <h2 className="font-serif text-[clamp(32px,3.6vw,48px)] font-semibold leading-[1.1]">{messages.introTitle}</h2>
+        </section>
 
-        <p className="animate-rise-up mt-5 max-w-[300px] text-[16px] leading-[1.5] text-body" style={{ animationDelay: '.08s' }}>
-          {messages.tagline}
-          <br />
-          {messages.taglineSecondLine}
-        </p>
+        <FeatureScroll features={features} />
 
-        <div className="animate-rise-up relative mt-10" style={{ animationDelay: '.16s' }}>
-          <span
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-soft/40 blur-3xl"
-          />
-          <Image
-            src="/screenshot-mobile.png"
-            alt={messages.screenshotAlt}
-            width={1080}
-            height={2400}
-            priority
-            className="relative h-auto w-[220px] rounded-[28px] border-[6px] border-ink/90 shadow-[0_18px_40px_rgba(34,31,26,0.18)]"
-          />
-        </div>
+        <section className="px-6 pb-24">
+          <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-10 rounded-[48px] bg-ink p-[clamp(40px,6vw,80px)] text-on-dark">
+            <div className="flex flex-[1_1_380px] flex-col gap-3">
+              <h2 className="font-serif text-[clamp(40px,5vw,64px)] font-semibold leading-[1.02]">
+                Crew. Plan. <span className="text-orange-bright">Go.</span>
+              </h2>
+              <p className="text-[19px] text-on-dark-2">{messages.ctaText}</p>
+            </div>
+            <CtaDownload platform={platform} messages={messages} />
+          </div>
+        </section>
+      </main>
 
-        <DownloadSection platform={platform} messages={messages} />
-      </section>
-
-      <footer className="flex items-center justify-center gap-4 text-[12px] text-muted">
-        <Link href="/aide" className="underline underline-offset-2">
-          {messages.help}
-        </Link>
-        <Link href="/conditions" className="underline underline-offset-2">
-          {messages.terms}
-        </Link>
-        <Link href="/confidentialite" className="underline underline-offset-2">
-          {messages.privacy}
-        </Link>
-        <Link href="/suppression-compte" className="underline underline-offset-2">
-          {messages.deleteAccount}
-        </Link>
+      <footer className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 px-6 pb-12 text-[15px] text-body">
+        <Image src="/komogo-logo.png" alt="Komogo" width={640} height={453} className="h-9 w-auto" />
+        <nav className="flex flex-wrap gap-6">
+          <Link href="/aide" className="text-ink underline underline-offset-2 hover:text-terracotta-dk">
+            {messages.help}
+          </Link>
+          <Link href="/conditions" className="text-ink underline underline-offset-2 hover:text-terracotta-dk">
+            {messages.terms}
+          </Link>
+          <Link href="/confidentialite" className="text-ink underline underline-offset-2 hover:text-terracotta-dk">
+            {messages.privacy}
+          </Link>
+          <Link href="/suppression-compte" className="text-ink underline underline-offset-2 hover:text-terracotta-dk">
+            {messages.deleteAccount}
+          </Link>
+        </nav>
       </footer>
-    </main>
+    </div>
   )
 }

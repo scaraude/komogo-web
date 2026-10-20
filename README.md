@@ -6,7 +6,7 @@ Le site `komogo.fr` est une **passerelle vers l'app native Komogo** ([repo `scar
 
 | Route | Rôle |
 | --- | --- |
-| `/` | Landing unique : pitch, capture de l'app, badge Google Play (iOS « bientôt »), QR code sur desktop. |
+| `/` | Landing unique : pitch, carrousel des écrans de l'app, parcours des fonctionnalités avec téléphone fixe au scroll, boutons des stores selon la plateforme (QR code sur desktop). |
 | `/e/[slug]` | Interstitiel d'invitation : tentative d'ouverture `komogo://`, titre/dates/destination du Komo, bouton store, lien en clair à recoller après installation. Cible réelle : les webviews in-app (Instagram, Messenger) qui n'honorent pas les App Links. |
 | `/api/og/[slug]` | Image Open Graph de l'aperçu riche (WhatsApp & co) — c'est ce qui fait cliquer. |
 | `/auth/confirm` | Interstitiel du retour OAuth quand l'app n'a pas intercepté le lien (cf. VIR-145, piste App Link HTTPS). Ne pas supprimer. |

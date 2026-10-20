@@ -80,18 +80,92 @@ export function StoreButtons({
   )
 }
 
-export function DownloadSection({ platform, messages }: { platform: Platform; messages: Messages }) {
+type Store = 'apple' | 'play'
+
+// Landing: App Store first, as in the validated mockup; on mobile only the platform's own store.
+function landingStores(platform: Platform): Store[] {
+  if (platform === 'android') return ['play']
+  if (platform === 'ios') return ['apple']
+  return ['apple', 'play']
+}
+
+function storeLabels(store: Store, messages: Messages) {
+  return store === 'apple'
+    ? { url: APP_STORE_URL, caption: messages.downloadOnThe, name: messages.appStore }
+    : { url: PLAY_STORE_URL, caption: messages.availableOn, name: 'Google Play' }
+}
+
+function DownloadIcon() {
   return (
-    <div className="mt-10 flex flex-col items-center gap-4">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className="h-[26px] w-[26px] shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 4v13M6 11l6 6 6-6M5 20h14" />
+    </svg>
+  )
+}
+
+/** Hero: stacked store buttons (the first one in red), plus the QR code on desktop. */
+export function HeroDownload({ platform, messages }: { platform: Platform; messages: Messages }) {
+  return (
+    <div className="mt-4 flex max-w-[380px] flex-col gap-3">
+      {landingStores(platform).map((store, index) => {
+        const { url, caption, name } = storeLabels(store, messages)
+        return (
+          <a
+            key={store}
+            href={url}
+            onClick={() => track('download_click', { store, platform, context: 'landing_hero' })}
+            className={`flex h-[78px] items-center justify-between rounded-[22px] px-7 transition-[filter] hover:brightness-[1.08] ${
+              index === 0 ? 'bg-terracotta-dk text-white' : 'bg-ink text-on-dark'
+            }`}
+          >
+            <span>
+              <span className={`block text-[13px] font-semibold ${index === 0 ? '' : 'text-on-dark-2'}`}>{caption}</span>
+              <span className="block font-serif text-[26px] font-semibold leading-[1.1]">{name}</span>
+            </span>
+            <DownloadIcon />
+          </a>
+        )
+      })}
       {platform === 'desktop' && (
-        <>
-          <div className="rounded-[18px] border border-line-2 bg-card p-4 shadow-[0_2px_0_var(--color-line-2)]">
-            <Image src="/qr-download.svg" alt={messages.qrAlt} width={148} height={148} className="h-[148px] w-[148px]" />
-          </div>
-          <p className="text-[13px] font-bold text-faint">{messages.scanToInstall}</p>
-        </>
+        <div className="flex items-center gap-3.5 px-1 py-2">
+          <Image src="/qr-download.svg" alt={messages.qrAlt} width={64} height={64} className="h-16 w-16 rounded-lg" />
+          <span className="max-w-[180px] text-[15px] leading-[1.4] text-body">{messages.scanFromDesktop}</span>
+        </div>
       )}
-      <StoreButtons platform={platform} context="landing" messages={messages} />
+    </div>
+  )
+}
+
+/** Final call to action: light store buttons on the dark block, plus the QR code on desktop. */
+export function CtaDownload({ platform, messages }: { platform: Platform; messages: Messages }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {landingStores(platform).map((store) => {
+        const { url, caption, name } = storeLabels(store, messages)
+        return (
+          <a
+            key={store}
+            href={url}
+            onClick={() => track('download_click', { store, platform, context: 'landing_cta' })}
+            className="flex h-[78px] min-w-[210px] flex-col justify-center rounded-[22px] bg-card px-7 text-ink transition-[filter] hover:brightness-[1.08]"
+          >
+            <span className="block text-[13px] font-semibold text-body">{caption}</span>
+            <span className="block font-serif text-[26px] font-semibold leading-[1.1]">{name}</span>
+          </a>
+        )
+      })}
+      {platform === 'desktop' && (
+        <Image src="/qr-download.svg" alt={messages.qrAlt} width={78} height={78} className="h-[78px] w-[78px] rounded-xl bg-card" />
+      )}
     </div>
   )
 }
