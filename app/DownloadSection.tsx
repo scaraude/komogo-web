@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { track } from '@vercel/analytics'
+import type { Locale } from '@/lib/locale'
 import type { Messages } from '@/lib/messages'
 import { APP_STORE_URL, PLAY_STORE_URL, type Platform } from '@/lib/store'
 
@@ -82,6 +83,19 @@ export function StoreButtons({
 
 type Store = 'apple' | 'play'
 
+// Official artwork, used as provided (Apple and Google forbid any change): App Store SVGs from
+// toolbox.marketingtools.apple.com, Google Play PNGs from play.google.com/badges with their transparent margin trimmed.
+const BADGES: Record<Store, Record<Locale, { src: string; width: number; height: number }>> = {
+  apple: {
+    fr: { src: '/badges/app-store-fr.svg', width: 127, height: 40 },
+    en: { src: '/badges/app-store-en.svg', width: 120, height: 40 },
+  },
+  play: {
+    fr: { src: '/badges/google-play-fr.png', width: 646, height: 192 },
+    en: { src: '/badges/google-play-en.png', width: 564, height: 168 },
+  },
+}
+
 // Landing: App Store first, as in the validated mockup; on mobile only the platform's own store.
 function landingStores(platform: Platform): Store[] {
   if (platform === 'android') return ['play']
@@ -89,52 +103,45 @@ function landingStores(platform: Platform): Store[] {
   return ['apple', 'play']
 }
 
-function storeLabels(store: Store, messages: Messages) {
-  return store === 'apple'
-    ? { url: APP_STORE_URL, caption: messages.downloadOnThe, name: messages.appStore }
-    : { url: PLAY_STORE_URL, caption: messages.availableOn, name: 'Google Play' }
-}
-
-function DownloadIcon() {
+function StoreBadge({
+  store,
+  platform,
+  locale,
+  messages,
+  context,
+}: {
+  store: Store
+  platform: Platform
+  locale: Locale
+  messages: Messages
+  context: string
+}) {
+  const badge = BADGES[store][locale]
+  const label = store === 'apple' ? `${messages.downloadOnThe} ${messages.appStore}` : `${messages.availableOn} Google Play`
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden
-      className="h-[26px] w-[26px] shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <a
+      href={store === 'apple' ? APP_STORE_URL : PLAY_STORE_URL}
+      onClick={() => track('download_click', { store, platform, context })}
+      className="rounded-[10px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-terracotta-dk"
     >
-      <path d="M12 4v13M6 11l6 6 6-6M5 20h14" />
-    </svg>
+      {/* Same height for both badges: Google requires its badge to be at least as large as the others. */}
+      <Image src={badge.src} alt={label} width={badge.width} height={badge.height} className="h-14 w-auto" />
+    </a>
   )
 }
 
-/** Hero: stacked store buttons (the first one in red), plus the QR code on desktop. */
-export function HeroDownload({ platform, messages }: { platform: Platform; messages: Messages }) {
+type DownloadProps = { platform: Platform; locale: Locale; messages: Messages }
+
+/** Hero: official store badges side by side, plus the QR code on desktop. */
+export function HeroDownload({ platform, locale, messages }: DownloadProps) {
   return (
-    <div className="mt-4 flex max-w-[380px] flex-col gap-3">
-      {landingStores(platform).map((store, index) => {
-        const { url, caption, name } = storeLabels(store, messages)
-        return (
-          <a
-            key={store}
-            href={url}
-            onClick={() => track('download_click', { store, platform, context: 'landing_hero' })}
-            className={`flex h-[78px] items-center justify-between rounded-[22px] px-7 transition-[filter] hover:brightness-[1.08] ${
-              index === 0 ? 'bg-terracotta-dk text-white' : 'bg-ink text-on-dark'
-            }`}
-          >
-            <span>
-              <span className={`block text-[13px] font-semibold ${index === 0 ? '' : 'text-on-dark-2'}`}>{caption}</span>
-              <span className="block font-serif text-[26px] font-semibold leading-[1.1]">{name}</span>
-            </span>
-            <DownloadIcon />
-          </a>
-        )
-      })}
+    <div className="mt-4 flex max-w-[420px] flex-col gap-3">
+      {/* gap-4 keeps the clear space both guidelines require: a quarter of the badge height. */}
+      <div className="flex flex-wrap gap-4">
+        {landingStores(platform).map((store) => (
+          <StoreBadge key={store} store={store} platform={platform} locale={locale} messages={messages} context="landing_hero" />
+        ))}
+      </div>
       {platform === 'desktop' && (
         <div className="flex items-center gap-3.5 px-1 py-2">
           <Image src="/qr-download.svg" alt={messages.qrAlt} width={64} height={64} className="h-16 w-16 rounded-lg" />
@@ -145,24 +152,13 @@ export function HeroDownload({ platform, messages }: { platform: Platform; messa
   )
 }
 
-/** Final call to action: light store buttons on the dark block, plus the QR code on desktop. */
-export function CtaDownload({ platform, messages }: { platform: Platform; messages: Messages }) {
+/** Final call to action: the same badges on the dark block, plus the QR code on desktop. */
+export function CtaDownload({ platform, locale, messages }: DownloadProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {landingStores(platform).map((store) => {
-        const { url, caption, name } = storeLabels(store, messages)
-        return (
-          <a
-            key={store}
-            href={url}
-            onClick={() => track('download_click', { store, platform, context: 'landing_cta' })}
-            className="flex h-[78px] min-w-[210px] flex-col justify-center rounded-[22px] bg-card px-7 text-ink transition-[filter] hover:brightness-[1.08]"
-          >
-            <span className="block text-[13px] font-semibold text-body">{caption}</span>
-            <span className="block font-serif text-[26px] font-semibold leading-[1.1]">{name}</span>
-          </a>
-        )
-      })}
+    <div className="flex flex-wrap items-center gap-4">
+      {landingStores(platform).map((store) => (
+        <StoreBadge key={store} store={store} platform={platform} locale={locale} messages={messages} context="landing_cta" />
+      ))}
       {platform === 'desktop' && (
         <Image src="/qr-download.svg" alt={messages.qrAlt} width={78} height={78} className="h-[78px] w-[78px] rounded-xl bg-card" />
       )}
